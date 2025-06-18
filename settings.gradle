@@ -1,4 +1,4 @@
-rootProject.name = 'uploader'
+rootProject.name = 'CloviUploader'
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
