@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import express.Express;
-import express.middleware.HttpProxy;
+import express.middleware.FileStatics;
 import express.middleware.Middleware;
 import express.utils.MediaType;
 import express.utils.Status;
@@ -150,7 +150,6 @@ public class Uploader {
                 res.sendBytes(favicon);
             } else res.send(path);
         });
-
         server.all("/", (req, res) -> {
             String name = config.getString("name", "{host}")
                     .replace("{host}", req.getHost().contains("localhost") || req.getHost().contains("127.0.0.1") ? "Clovi > Uploader" : req.getHost());
@@ -171,7 +170,20 @@ public class Uploader {
             res.setContentType(MediaType._html);
             res.send(resHtml);
         });
-        server.all((req, res) -> res.send("File not found"));
+        boolean staticEnable = true;
+        if(!Path.of("./static").toFile().exists()){
+            try {
+                Files.createDirectory(Path.of("./static"));
+            } catch (Exception ex){
+                ex.printStackTrace();
+                staticEnable = false;
+            }
+        }
+        if(staticEnable) server.all(new FileStatics("static"));
+        server.all((req, res) -> {
+            res.setStatus(404);
+            res.send("File not found");
+        });
         server.listen(config.getNumber("port", 1984).intValue());
         LOG.log("-=-=-=-=-=-=-=-=-=-=-=-=-");
         LOG.log("Uploader запущен!");
