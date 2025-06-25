@@ -108,6 +108,7 @@ public class Uploader {
                         addFilename(id, fileName, delete_id);
                         JsonObject resp = new JsonObject();
                         resp.addProperty("id", id);
+                        resp.addProperty("name", fileName);
                         resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
                         resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
                         res.json(resp);

@@ -57,6 +57,7 @@
                 uploadFile(file)
             });
         })
+        let showHistory = false;
         const uploadFile = (file) => {
             if (file.size > 104857600) {
                 alert("Файл весит больше 100мб!")
@@ -91,7 +92,8 @@
                         document.getElementById("oh").value = suckass.url;
                         document.getElementById("title").innerText = "Файл загружен!";
                         document.getElementById("description").innerHTML = "<a href=\"" + suckass.url + "\">" + suckass.url + "</a> <button onclick=\"onCopy()\">Скопировать</a>"
-                        addToHistory(suckass.url)
+                        suckass.type = file.type;
+                        addToHistory(suckass)
                     }
                 })
                 .catch(error => {
@@ -101,13 +103,29 @@
                 });
         };
         let history = [];
+        function changeTab(b){
+            showHistory = b;
+            document.getElementById("content").style.display = b ? "none" : ""
+            document.getElementById("files").style.display = b ? "" : "none"
+        }
         function loadHistory() {
             if (localStorage.getItem("history") == null) {
                 localStorage.setItem("history", "[]");
             }
             history = JSON.parse(localStorage.getItem("history"));
             for (i = 0; i < history.length; i++) {
-                addHistoryElement(history[i])
+                if(history[i].type) addHistoryElement(history[i])
+                else {
+                    let args = history[i].split("/");
+                    let newData = {
+                        "name": history[i],
+                        "id": args[args.length-1],
+                        "url": history[i],
+                        "type": "file",
+                        "delete_url": ""
+                    }
+                    addHistoryElement(newData)
+                }
             }
         }
         function addToHistory(url) {
@@ -115,14 +133,16 @@
             addHistoryElement(url)
             localStorage.setItem("history", JSON.stringify(history))
         }
-        function addHistoryElement(url) {
-            let div = document.getElementById("history");
-            if (div.style.display == "none") div.style.display = "";
+        function addHistoryElement(data) {
+            let div = document.getElementById("files");
+            let file = document.createElement("div");
+            file.className = "hehehehe"
             let p = document.createElement("p")
             let a = document.createElement("a")
             let b = document.createElement("button")
+            let url = data.url;
             a.href = url;
-            a.innerText = url.split("/")[2] + "/" + url.split("/")[3];
+            a.innerText = data.name;
             // a.innerText+=" ";
             b.innerText = "Копировать";
             b.onclick = (s) => {
@@ -130,10 +150,49 @@
                 document.getElementById("oh").value = heh;
                 onCopy();
             }
-            b.style = "margin-left: 10pt;"
+            b.style = "margin-top: 5pt;"
             p.appendChild(a);
+            p.appendChild(document.createElement("br"))
             p.appendChild(b);
-            div.appendChild(p);
+            if(data.delete_url.length != 0){
+                let bd = document.createElement("button")
+                bd.style = "margin-top: 5pt; margin-left: 10pt"
+                bd.innerText = "Удалить";
+                bd.className = "delete"
+                bd.onclick = (s) => {
+                    let heh = data.delete_url;
+                    window.location.replace(heh);
+                }
+                p.appendChild(bd);
+            }
+            file.appendChild(p);
+            div.appendChild(file);
+            if(data.type.startsWith("image")){
+                let img = document.createElement("img");
+                img.src = url;
+                img.style.width = "65%"
+                img.style.marginTop = "5pt"
+                file.appendChild(img);
+            } else if(data.type.startsWith("video")){
+                let video = document.createElement("video");
+                let source = document.createElement("source");
+                video.controls = true;
+                video.style.width = "65%"
+                video.style.marginTop = "5pt"
+                video.volume = 0.25;
+                source.src = url;
+                video.appendChild(source);
+                file.appendChild(video);
+            } else if(data.type.startsWith("audio")){
+                let audio = document.createElement("video");
+                audio.controls = true;
+                audio.style.width = "75%"
+                audio.style.height = "50pt"
+                audio.style.marginTop = "5pt"
+                audio.volume = 0.25;
+                audio.src = url;
+                file.appendChild(audio);
+            }
         }
         async function onCopy() {
             let copyGfGText =
@@ -182,6 +241,12 @@
         [id=content] {
             background-color: #181825;
             padding: 16pt;
+            border-radius: 16pt;
+        }
+        [class=hehehehe] {
+            background-color: #181825;
+            padding: 8pt;
+            margin-top: 8pt;
             border-radius: 16pt;
         }
 
@@ -273,6 +338,10 @@
             color: #fff;
         }
 
+        button[class=delete] {
+            background-color: #ff006e;
+        }
+
         input[type=file],
         input[type=file] button {
             font-size: 10pt;
@@ -318,6 +387,10 @@
                 <div id="head" style="height: auto !important;">
                     <h2 style="text-align: center;">{hostname}</h2>
                 </div>
+                <div id="head" style="height: auto !important;"  align="center">
+                    <button style="width: 48%; height: 30pt;" onclick="changeTab(false)" id="upl">Загрузить</button>
+                    <button style="width: 48%; height: 30pt;" onclick="changeTab(true)" id="fil">Файлы</button>
+                </div>
                 <div id="warn" style="height: auto !important;{display}" >
                     <h3 style="text-align: center;">{message}
                     </h3>
@@ -331,8 +404,7 @@
                     <br>
                     <input type="file" id="file" name="file" />
                 </div>
-                <div id="history" style="height: auto !important; display: none;">
-                    <h2 style="text-align: center;">Ваши файлы:</h2>
+                <div id="files" style="display: none;">
                 </div>
                 <p style="color:#ffffff75; font-size: 10pt; text-align: center;"><a
                         style="color:#ffffffa7; font-size: 13pt;" href="https://kelcu.ru/">Сделано с ❤ от
