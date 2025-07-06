@@ -23,12 +23,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        var width = window.innerWidth
+window.onresize = (event) => {
+    if (width != window.innerWidth) {
+        width = window.innerWidth;
+        adaptionModile();
+    }
+}
+function adaptionModile() {
+    if (window.innerWidth < 525) {
+        document.getElementsByTagName("body")[0].style = "padding-left: 0; padding-right: 0; margin-top: 0pt; margin-bottom: 0pt; border-radius: 0pt;"
+        document.getElementsByTagName("html")[0].style = "background-color: var(--background-content); background-image:none;"
+    } else {
+        document.getElementsByTagName("body")[0].style = "padding-left: 10pt; padding-right: 10pt;"
+        document.getElementsByTagName("html")[0].style = ""
+    }
+}
+
         let fileInput;
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
         document.addEventListener("DOMContentLoaded", function (event) {
+        adaptionModile();
             loadHistory()
             fileInput = document.getElementById("file");
             fileInput.addEventListener("change", (s) => {
@@ -191,6 +209,7 @@
             if (data.type.startsWith("image")) {
                 previewFile = true;
                 let img = document.createElement("img");
+                img.loading = "lazy"
                 img.src = url;
                 img.style.width = "65%"
                 img.style.marginTop = "5pt"
@@ -204,8 +223,8 @@
                 video.style.width = "65%"
                 video.style.marginTop = "5pt"
                 video.volume = 0.25;
-                source.src = url;
-                video.appendChild(source);
+                video.preload = "none"
+                video.src = url;
                 preview.appendChild(video);
             } else if (data.type.startsWith("audio")) {
                 previewFile = true;
@@ -215,6 +234,7 @@
                 audio.style.height = "50pt"
                 audio.style.marginTop = "5pt"
                 audio.volume = 0.25;
+                audio.preload = "none"
                 audio.src = url;
                 preview.appendChild(audio);
             }
@@ -239,7 +259,7 @@
         :root {
             --background: #121212;
             --background-content: #1a1a1a;
-            --base-color: #7f916f;
+            --base-color: {accent_color};
             --alpha-base-color: #7f916f73;
             --font-color: #d5d5d5;
 
@@ -709,7 +729,7 @@
 				<nav class="info">
 					<ul class="list">
 						<li class="item" align="center">
-							<a class="link" href="/tos" style="padding:0;">Terms of Service / Privacy Policy</a><br>
+							<a class="link" href="https://clovi.ru/tos" style="padding:0;">Terms of Service / Privacy Policy</a><br>
 							<a class="link" href="https://clovi.ru/about">О проекте</a> / <a class="link" href="/catterino.png">Chatterino</a>
 						</li>
 					</ul>
@@ -717,7 +737,7 @@
 				<nav class="menu">
 					<ul class="list">
 						<li class="item">
-							<a class="link" href="/about" id="contacts">© Clovi - 2025</a>
+							<a class="link" href="https://clovi.ru/about" id="contacts">© Clovi - 2025</a>
 						</li>
 					</ul>
 				</nav>
