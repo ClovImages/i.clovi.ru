@@ -15,7 +15,8 @@
     <meta property="og:image:height" content="128">
     <meta property="og:description"
         content="Ответвление сервиса Клови. Отечественный аналог kappa.lol и всех подобных продуктов западной пропаганды." />
-    <meta name="description" content="Ответвление сервиса Клови. Отечественный аналог kappa.lol и всех подобных продуктов западной пропаганды." />
+    <meta name="description"
+        content="Ответвление сервиса Клови. Отечественный аналог kappa.lol и всех подобных продуктов западной пропаганды." />
     <meta name="theme-color" content="#7f916f">
     <meta name="twitter:site" content="@kel_cu">
 
@@ -36,7 +37,7 @@
                     uploadFile(s.target.files[0])
                 }
             })
-            let dropZone = document.getElementsByClassName('outer')[0];
+            let dropZone = document.getElementsByClassName('hehehe')[0];
             dropZone.addEventListener('dragover', preventDefaults);
             dropZone.addEventListener('dragenter', preventDefaults);
             dropZone.addEventListener('dragleave', preventDefaults);
@@ -87,57 +88,61 @@
                 .then(suckass => {
                     if (suckass.error) {
                         document.getElementById("title").innerText = "Произошла ошибка!";
-                        document.getElementById("description").innerHTML = "[" + suckass.error.code + "/" + suckass.error.codename + "] " + suckass.error.message;
+                        document.getElementById("msg").innerHTML = "[" + suckass.error.code + "/" + suckass.error.codename + "] " + suckass.error.message;
                     } else {
                         document.getElementById("oh").value = suckass.url;
                         document.getElementById("title").innerText = "Файл загружен!";
-                        document.getElementById("description").innerHTML = "<a href=\"" + suckass.url + "\">" + suckass.url + "</a> <button onclick=\"onCopy()\">Скопировать</a>"
+                        document.getElementById("msg").innerHTML = "<a href=\"" + suckass.url + "\">" + suckass.url + "</a> <button onclick=\"onCopy()\">Скопировать</a>"
                         suckass.type = file.type;
                         addToHistory(suckass)
                     }
                 })
                 .catch(error => {
                     document.getElementById("title").innerText = "Произошла ошибка!";
-                    document.getElementById("description").innerHTML = "Возможно Роскомнадзор добрался до сюда"
+                    document.getElementById("msg").innerHTML = "Возможно Роскомнадзор добрался до сюда"
                     console.error(error); // Handle upload errors
                 });
         };
         let history = [];
-        function changeTab(b){
+        function changeTab(b) {
             showHistory = b;
             document.getElementById("content").style.display = b ? "none" : ""
             document.getElementById("files").style.display = b ? "" : "none"
         }
         function loadHistory() {
+            document.getElementById("files").innerHTML = "";
             if (localStorage.getItem("history") == null) {
                 localStorage.setItem("history", "[]");
             }
             history = JSON.parse(localStorage.getItem("history"));
             for (i = 0; i < history.length; i++) {
-                if(history[i].type) addHistoryElement(history[i])
+                if (history[i].type) addHistoryElement(history[i], i)
                 else {
                     let args = history[i].split("/");
                     let newData = {
                         "name": history[i],
-                        "id": args[args.length-1],
+                        "id": args[args.length - 1],
                         "url": history[i],
                         "type": "file",
                         "delete_url": ""
                     }
-                    addHistoryElement(newData)
+                    addHistoryElement(newData, i)
                 }
             }
         }
+
         function addToHistory(url) {
-            history.push(url);
-            addHistoryElement(url)
+            history.unshift(url);
             localStorage.setItem("history", JSON.stringify(history))
+            loadHistory();
         }
-        function addHistoryElement(data) {
+
+        function addHistoryElement(data, id) {
             let div = document.getElementById("files");
+            if (id != 0) div.appendChild(document.createElement("hr"));
             let file = document.createElement("div");
             file.className = "hehehehe"
-            let p = document.createElement("p")
+            let p = document.createElement("h4")
             let a = document.createElement("a")
             let b = document.createElement("button")
             let url = data.url;
@@ -152,28 +157,47 @@
             }
             b.style = "margin-top: 5pt;"
             p.appendChild(a);
-            p.appendChild(document.createElement("br"))
+            // p.appendChild(document.createElement("br"))
             p.appendChild(b);
-            if(data.delete_url.length != 0){
+            if (data.delete_url.length != 0) {
                 let bd = document.createElement("button")
                 bd.style = "margin-top: 5pt; margin-left: 10pt"
                 bd.innerText = "Удалить";
                 bd.className = "delete"
-                bd.onclick = (s) => {
+                bd.onclick = async (s) => {
                     let heh = data.delete_url;
-                    window.location.replace(heh);
+                    let url = await fetch(heh);
+                    let status = await url.status;
+                    if (status == 200) {
+                        let history = JSON.parse(localStorage.getItem("history"));
+                        let newHistory = [];
+                        for (i = history.length - 1; i >= 0; i--) {
+                            if (i != id) newHistory.push(history[i]);
+                        }
+                        localStorage.setItem("history", JSON.stringify(newHistory))
+                        alert("Файл удалён!")
+                        loadHistory();
+                    }
                 }
                 p.appendChild(bd);
             }
             file.appendChild(p);
             div.appendChild(file);
-            if(data.type.startsWith("image")){
+            let previewFile = false;
+            let preview = document.createElement("details")
+            let name = document.createElement("summary")
+            preview.style.marginTop = "-6pt";
+            name.innerText = "Предпросмотр"
+            if (data.type.startsWith("image")) {
+                previewFile = true;
                 let img = document.createElement("img");
                 img.src = url;
                 img.style.width = "65%"
                 img.style.marginTop = "5pt"
-                file.appendChild(img);
-            } else if(data.type.startsWith("video")){
+
+                preview.appendChild(img);
+            } else if (data.type.startsWith("video")) {
+                previewFile = true;
                 let video = document.createElement("video");
                 let source = document.createElement("source");
                 video.controls = true;
@@ -182,8 +206,9 @@
                 video.volume = 0.25;
                 source.src = url;
                 video.appendChild(source);
-                file.appendChild(video);
-            } else if(data.type.startsWith("audio")){
+                preview.appendChild(video);
+            } else if (data.type.startsWith("audio")) {
+                previewFile = true;
                 let audio = document.createElement("video");
                 audio.controls = true;
                 audio.style.width = "75%"
@@ -191,7 +216,11 @@
                 audio.style.marginTop = "5pt"
                 audio.volume = 0.25;
                 audio.src = url;
-                file.appendChild(audio);
+                preview.appendChild(audio);
+            }
+            if (previewFile) {
+                preview.append(name)
+                file.append(preview)
             }
         }
         async function onCopy() {
@@ -207,214 +236,495 @@
         }
     </script>
     <style>
+        :root {
+            --background: #121212;
+            --background-content: #1a1a1a;
+            --base-color: #7f916f;
+            --alpha-base-color: #7f916f73;
+            --font-color: #d5d5d5;
+
+            --blockquote-background: #7f916f1e;
+            --blockquote: #7f916f;
+
+            --scrollbar-background: #0000007f;
+            --scrollbar-color: var(--base-color);
+
+            --button-background: #e3e3e3;
+            --button-color: #000;
+
+            --button-background-focus: var(--base-color);
+            --button-color-focus: var(--font-color);
+            --input-background: #343434;
+            --input-color: var(--font-color);
+        }
+
         html {
-            background: #11111b;
-            font-family: "Source Code Pro", monospace;
-            color: #fff;
+            box-sizing: border-box;
+            background: var(--background);
+            font-family: system-ui, monospace;
+            color: var(--font-color);
         }
 
-        .outer {
-            display: table;
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-        }
-
-        .middle {
-            display: table-cell;
-            vertical-align: middle;
-        }
-
-        .inner {
+        body {
+            background-color: var(--background-content);
+            width: 95%;
+            max-width: 850pt;
             margin-left: auto;
             margin-right: auto;
-            width: 75%;
-            max-width: 500pt;
-            padding: 4pt;
-            /* border: dashed 0.10pc #4c8a5b; */
-            /* background: #354d5963; */
-            /* Whatever width you want */
+            padding-top: 2pt;
+            padding-bottom: 0;
+            margin-top: 10pt;
+            margin-bottom: 10pt;
+            border-radius: 10pt;
         }
 
-        [id=content] {
-            background-color: #181825;
-            padding: 16pt;
-            border-radius: 16pt;
-        }
-        [class=hehehehe] {
-            background-color: #181825;
-            padding: 8pt;
-            margin-top: 8pt;
-            border-radius: 16pt;
+        body,
+        button,
+        input,
+        select {
+            font: 12pt/1.33 system-ui, monospace;
         }
 
-        [id=head] {
-            background-color: #181825;
-            padding: 8pt;
-            border-radius: 16pt;
-            margin-bottom: 8pt;
+        audio {
+            width: 75%
         }
 
-        [id=warn] {
-            background-color: #ce5783;
-            padding: 8pt;
-            border-radius: 16pt;
-            margin-top: 8pt;
-            margin-bottom: 8pt;
+        /* Шапка */
+        header {
+            margin-bottom: 15pt;
         }
 
-        [id=history] {
-            background-color: #181825;
-            padding: 8pt;
-            border-radius: 16pt;
-            margin-top: 8pt;
+        .header .container {
+            padding: 0 5pt;
         }
 
-        [id=warn] hr {
-            color: #fff;
+        .header {
+            padding-top: 5pt;
+            padding-bottom: 5pt;
+            border-bottom: solid 0.20pc var(--base-color);
+        }
+
+        .header .container .inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .container .inner #icon {
+            height: 30pt;
+            margin: 0;
+            margin-left: 5pt;
+            margin-right: 0;
+        }
+
+        .header .container .inner #account {
+            height: 30pt;
+            margin: 0;
+            margin-left: 5pt;
+            margin-right: 0;
+        }
+
+        .header .container .inner .list {
+            display: flex;
+            list-style: none;
+        }
+
+        .header .container .inner .list .item {
+            margin-right: 5pt;
+        }
+
+        .header .container .inner .list .item .link {
+            padding: 10pt;
+            font-size: 14pt;
+            color: var(--font-color);
+            text-decoration: none;
+        }
+
+        /* .header .container .inner .list .item .link a img{
+    height: 15pt;
+} */
+        /* .header .container .inner .list .item .link{
+    padding-bottom: 0;
+} */
+
+        .header .container .inner .list .item .link:hover {
+            color: var(--base-color);
+        }
+
+        /* Ботинки */
+        footer {
+            margin-top: 15pt;
+        }
+
+        .footer .container {
+            padding: 0 5pt;
+        }
+
+        .footer {
+            padding-top: 5pt;
+            padding-bottom: 5pt;
+            border-top: solid 0.20pc var(--base-color);
+        }
+
+        .footer .container .inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer .container .inner p {
+            font-size: 14pt;
+        }
+
+        .footer .container .inner .list {
+            display: flex;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .footer .container .inner .list .item {
+            margin-right: 5pt;
+        }
+
+        .footer .container .inner .list .item .link {
+            padding: 10pt 20pt;
+            font-size: 14pt;
+            color: var(--font-color);
+            text-decoration: none;
+        }
+
+        .footer .container .inner p {
+            font-size: 14pt;
+        }
+
+        .footer .container .inner .list .item .link:hover {
+            color: var(--base-color);
+        }
+
+        /* База */
+        p,
+        pre,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        label {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 8pt;
+            padding-right: 10pt;
+        }
+
+        blockquote p,
+        blockquote a,
+        blockquote img,
+        blockquote details,
+        blockquote iframe,
+        blockquote pre,
+        blockquote h1,
+        blockquote h2,
+        blockquote h3,
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            margin-left: 16pt;
+        }
+
+        blockquote p a,
+        blockquote p img,
+        blockquote p a img,
+        blockquote h1 a,
+        blockquote h2 a,
+        blockquote h3 a,
+        blockquote h4 a,
+        blockquote h5 a,
+        blockquote h6 a {
+            margin-left: 0;
         }
 
         h1,
         h2,
         h3,
-        p {
+        h4,
+        h5,
+        h6 {
+            margin-right: 16pt;
+        }
+
+        h1 {
+            font-size: 20pt;
+        }
+
+        h2 {
+            font-size: 18pt;
+        }
+
+        h3 {
+            font-size: 16pt;
+        }
+
+        h4 {
+            font-size: 14pt;
+        }
+
+        h5 {
+            font-size: 12pt;
+        }
+
+        h6 {
+            font-size: 10pt;
+        }
+
+        img,
+        iframe {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 16pt;
+        }
+
+        video {
             margin: 4pt;
+            margin-left: 16pt;
+            margin-right: 16pt;
+        }
+
+        audio {
+            margin-top: 6pt;
+            margin-bottom: 6pt;
+        }
+
+        p img,
+        p iframe,
+        p video {
+            margin-left: 0pt;
+            margin-right: 0pt;
         }
 
         a {
-            color: #ffffffd3;
+            color: var(--font-color);
             text-decoration: none;
         }
 
-        a::selection,
-        p::selection,
-        h1::selection,
-        h2::selection,
-        h3::selection,
-        br::selection {
-            color: #09090b;
-            background-color: #fff;
-        }
-
-        h3::selection {
-            color: #09090b;
-            background-color: {accent_color};
-        }
-
-        p,
-        a {
-            color: #ffffffd3;
-            font-size: 16pt;
-            margin-top: 8pt;
-            margin-bottom: 4pt;
-        }
-
         a:hover {
-            color: {accent_color};
+            color: var(--base-color);
             text-decoration: underline dashed;
         }
 
-        .dropzone {
-            box-sizing: border-box;
-            display: none;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            left: 0;
-            top: 0;
-            z-index: 99999;
+        /* scroller */
 
-            /* background: rgba(, .8);
-            border: 11px dashed $colorBlue; */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-color) var(--scrollbar-background);
         }
 
-        button {
-            background-color: {accent_color};
-            border: 0;
-            padding: 5pt;
+        *::-webkit-scrollbar {
+            height: 12px;
+            width: 12px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--scrollbar-color);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-color);
+            border-radius: 5px;
+            border: 3px solid var(--scrollbar-background);
+        }
+
+        /* pre */
+
+        pre {
+            background: #000;
+            color: var(--kel);
+            margin-right: 16pt;
+            /* width: 350px; */
+            padding: 10px;
+            font-size: 16px;
+            border: solid 0.20pc var(--base-color);
+        }
+
+        pre code {
+            padding: 3pt;
+            border: none;
+            background-color: none;
+        }
+
+        /* details */
+
+        details {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 8pt;
+            padding-right: 10pt;
+        }
+
+        /*  */
+
+        blockquote {
+            margin-left: 16pt;
+            margin-right: 16pt;
+            padding: 0.5pt 0 0.5pt 0;
+            border-left: solid 0.20pc var(--blockquote);
+            background: var(--blockquote-background);
+        }
+
+        hr {
+            margin-right: 8pt;
+            margin-left: 8pt;
+            border-color: var(--alpha-base-color)
+        }
+
+        p code {
+            background: var(--alpha-base-color);
+            padding-left: 4pt;
+            padding-right: 4pt;
+            border-radius: 4pt;
+        }
+
+        p button{
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 8pt;
+            padding-right: 10pt;
+
+            border: none;
             border-radius: 5pt;
-            color: #fff;
+            padding: 5pt;
+            font-size: 12pt;
+
+            background-color: var(--button-background);
+            color: var(--button-color);
         }
 
-        button[class=delete] {
-            background-color: #ff006e;
+        label {
+            font-size: 12pt;
+        }
+
+        button:hover,
+        input:hover,
+        select:hover,
+        button:focus,
+        input:focus,
+        select:focus {
+            border: none;
+            stroke: none;
+            background-color: var(--button-background-focus);
+            color: var(--button-color-focus);
+        }
+
+        textarea {
+            max-width: 94.6%;
+            min-width: 94.6%;
+            width: 94.6%;
+            max-height: max-content;
+            min-height: 500pt;
         }
 
         input[type=file],
         input[type=file] button {
             font-size: 10pt;
-            background-color: #242436;
+            background-color: var(--input-background);
             border: 0;
             padding: 5pt;
             border-radius: 5pt;
-            color: #fff;
+            color: var(--input-color);
         }
 
         input::file-selector-button {
-            background-color: {accent_color};
+            background-color: var(--button-background);
             border: 0;
             margin-right: 10pt;
             padding: 5pt;
             border-radius: 5pt;
-            color: #fff;
+            color: var(--button-color);
         }
 
         input::file-selector-button:hover {
-            background-color: #fff;
-            color: #000;
+            background-color: var(--button-background-focus);
+            color: var(--button-color-focus);
         }
 
-        button:hover {
-            background-color: #fff;
-            color: #000;
+        div[id=warn] {
+            background-color: #ff006e;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 8pt;
+            margin-right: 3pt;
         }
-
-        button:focus {
-            border: dashed 1pt {accent_color};
-            background-color: #fff;
-            color: #000;
+        div[id=warn] a{
+            color: #fff;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 </head>
 
-<body>
-    <div class="outer">
-        <div class="middle">
+<body class="hehehe">
+    <header class="header">
+        <div class="container">
             <div class="inner">
-                <div id="head" style="height: auto !important;">
-                    <h2 style="text-align: center;">{hostname}</h2>
+                <button href="/" style="background: none; margin: 0; pending:0; color: #ffffff"
+                    onclick="window.location.replace('/');"><img id="icon" src="https://clovi.ru/assets/icon.svg"
+                        align="center"> {hostname}</button>
+                <div id="warn" style="height: auto !important;{display}" class="displayed-max">
+                    <p style="text-align: center;">{message}</p>
                 </div>
-                <div id="head" style="height: auto !important;"  align="center">
-                    <button style="width: 48%; height: 30pt;" onclick="changeTab(false)" id="upl">Загрузить</button>
-                    <button style="width: 48%; height: 30pt;" onclick="changeTab(true)" id="fil">Файлы</button>
-                </div>
-                <div id="warn" style="height: auto !important;{display}" >
-                    <h3 style="text-align: center;">{message}
-                    </h3>
-                </div>
-                <div id="content" style="height: auto !important;" align="center">
-                    <input id="oh" style="display: none;">
-                    <img src="https://wf.kelcu.ru/icons/document.png" width="128pt" align="center" id="image">
-                    <h2 id="title">Перетащите сюда файл</h2>
-                    <p id="description">или выберите его здесь</p>
-                    <p id="msg"></p>
-                    <br>
-                    <input type="file" id="file" name="file" />
-                </div>
-                <div id="files" style="display: none;">
-                </div>
-                <p style="color:#ffffff75; font-size: 10pt; text-align: center;"><a
-                        style="color:#ffffffa7; font-size: 13pt;" href="https://kelcu.ru/">Сделано с ❤ от
-                    Кела</a><br><a
-                        style="color:#ffffffa7; font-size: 11pt;" href="https://clovi.ru/about">О проекте</a> /
-                    <a style="color:#ffffffa7; font-size: 11pt;" href="/catterino.png">Chatterino</a>
-                    <br><br>Clovi > Uploader<br>v{version}</p>
             </div>
         </div>
+    </header>
+    <div id="content">
+        <div style="padding-bottom: 6pt;">
+            <input id="oh" style="display: none;">
+            <img src="https://wf.kelcu.ru/icons/document.png" width="120pt" align="left">
+            <h2 id="title">Перетащите сюда файл</h2>
+            <p id="description">или выберите его здесь</p>
+            <input type="file" id="file" name="file" style="margin:0" />
+            <p id="msg"></p>
+        </div>
+        <h2>Ваши файлы</h2>
+        <hr>
+        <div id="files">
+
+        </div>
     </div>
+    <footer class="footer">
+        <div class="container">
+            <div class="inner">
+                <!-- <p><a href="https://kelcu.ru/">Сделано с ❤ от Кела</a><br>v{version}</p>
+                <p><a href="https://clovi.ru/about">О проекте</a> <br> <a href="/catterino.png">Chatterino</a></p> -->
+                <div>
+					<img src="https://wf.kelcu.ru/icons/clover.png" width="50pt" align="left" id="header-icon">
+					<p id="header-text">Сделано с ❤ от Кела</p>
+				</div>
+				<nav class="info">
+					<ul class="list">
+						<li class="item" align="center">
+							<a class="link" href="/tos" style="padding:0;">Terms of Service / Privacy Policy</a><br>
+							<a class="link" href="https://clovi.ru/about">О проекте</a> / <a class="link" href="/catterino.png">Chatterino</a>
+						</li>
+					</ul>
+				</nav>
+				<nav class="menu">
+					<ul class="list">
+						<li class="item">
+							<a class="link" href="/about" id="contacts">© Clovi - 2025</a>
+						</li>
+					</ul>
+				</nav>
+            </div>
+        </div>
+    </footer>
+
 </body>
 
 </html>

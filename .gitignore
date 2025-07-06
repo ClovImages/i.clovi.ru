@@ -40,7 +40,7 @@ bin/
 
 files
 .idea
-index.html
+src/main/resources/index.html
 config.json
 files.json
 
