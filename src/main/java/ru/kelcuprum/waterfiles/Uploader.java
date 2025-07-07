@@ -56,6 +56,15 @@ public class Uploader {
         server.use(Middleware.cors());
         server.use((req, res) -> LOG.log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
         // -=-=-=-=-
+        server.all((req, res) -> {
+            String mainHostname = config.getString("hostname", "");
+            if(!mainHostname.isEmpty()){
+                if(!req.getHost().equals(mainHostname)){
+                    String protocol = req.getProtocol().startsWith("HTTP/") ? "http" : "https";
+                    res.redirect(String.format("%s://%s%s",protocol, mainHostname, req.getPath()));
+                }
+            }
+        });
         server.all("/release", (req, res) -> res.json(release.toJSON()));
         server.all("/:id", (req, res) -> {
             String id = req.getParam("id").split("\\.")[0];
