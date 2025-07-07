@@ -106,18 +106,24 @@ function adaptionModile() {
                 .then(suckass => {
                     if (suckass.error) {
                         document.getElementById("title").innerText = "Произошла ошибка!";
-                        document.getElementById("msg").innerHTML = "[" + suckass.error.code + "/" + suckass.error.codename + "] " + suckass.error.message;
+                        document.getElementById("msg").innerHTML = "<p>[" + suckass.error.code + "/" + suckass.error.codename + "] " + suckass.error.message + "</p>";
+                        document.getElementById("description").innerHTML = "Попробуйте ещё раз!"
+                        document.getElementById("msg").style.display = ""
                     } else {
                         document.getElementById("oh").value = suckass.url;
                         document.getElementById("title").innerText = "Файл загружен!";
-                        document.getElementById("msg").innerHTML = "<a href=\"" + suckass.url + "\">" + suckass.url + "</a> <button onclick=\"onCopy()\">Скопировать</a>"
+                        document.getElementById("msg").innerHTML = "<p><a href=\"" + suckass.url + "\" style=\"font-weight: 700;\">" + suckass.url + "</a><button onclick=\"onCopy()\">Скопировать</button></p>"
+                        document.getElementById("msg").style.display = ""
+                        document.getElementById("description").innerHTML = "Вы можете загрузить ещё один файл!"
                         suckass.type = file.type;
                         addToHistory(suckass)
                     }
                 })
                 .catch(error => {
                     document.getElementById("title").innerText = "Произошла ошибка!";
-                    document.getElementById("msg").innerHTML = "Возможно Роскомнадзор добрался до сюда"
+                    document.getElementById("msg").innerHTML = "<p>Возможно Роскомнадзор добрался до сюда</p>"
+                        document.getElementById("description").innerHTML = "Попробуйте ещё раз!"
+                    document.getElementById("msg").style.display = ""
                     console.error(error); // Handle upload errors
                 });
         };
@@ -189,12 +195,14 @@ function adaptionModile() {
                     if (status == 200) {
                         let history = JSON.parse(localStorage.getItem("history"));
                         let newHistory = [];
-                        for (i = history.length - 1; i >= 0; i--) {
+                        for (i = 0; i < history.length; i++) {
                             if (i != id) newHistory.push(history[i]);
                         }
                         localStorage.setItem("history", JSON.stringify(newHistory))
                         alert("Файл удалён!")
                         loadHistory();
+                    } else {
+                        alert("Не получилось удалить файл!")
                     }
                 }
                 p.appendChild(bd);
@@ -685,6 +693,14 @@ function adaptionModile() {
         div[id=warn] a{
             color: #fff;
         }
+        .delete{
+            background-color: #ff006e;
+            color: #fff;
+        }
+        .delete:focus, .delete:hover{
+            background-color: #fff;
+            color: var(--button-color);
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 </head>
@@ -709,8 +725,9 @@ function adaptionModile() {
             <h2 id="title">Перетащите сюда файл</h2>
             <p id="description">или выберите его здесь</p>
             <input type="file" id="file" name="file" style="margin:0" />
-            <p id="msg"></p>
+            <p></p>
         </div>
+        <blockquote id="msg" style="display:none"></blockquote>
         <h2>Ваши файлы</h2>
         <hr>
         <div id="files">
