@@ -84,7 +84,7 @@ public class Uploader {
                             res.setHeader("Content-Type", fileTypes.get(name));
                             if(fileTypes.get(name).startsWith("video") || fileTypes.get(name).startsWith("audio")){
                                 res.setHeader("accept-ranges", "bytes");
-                                res.setHeader("content-range", "bytes "+req.getHeader("range").getFirst()+file.length()+"/"+(file.length()+1));
+                                if(!req.getHeader("range").isEmpty()) res.setHeader("content-range", "bytes "+req.getHeader("range").getFirst()+file.length()+"/"+(file.length()+1));
                             }
                         }
                         res.send(file.toPath());
