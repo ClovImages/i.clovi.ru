@@ -41,7 +41,7 @@ bin/
 files
 .idea
 src/main/resources/index.html
-config.json
+config2.json
 files.json
 
 ### Mac OS ###

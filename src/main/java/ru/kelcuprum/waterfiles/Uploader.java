@@ -27,14 +27,18 @@ public class Uploader {
     public static Config links = new Config("./files.json");
     public static File mainFolder = new File("./files");
     public static String html = "";
+    public static String embedHtml = "";
     public static byte[] favicon = null;
     public static Config release = new Config(new JsonObject());
     public static HashMap<String, String> fileNames = new HashMap<>();
     public static HashMap<String, String> fileDeletes = new HashMap<>();
+    public static HashMap<String, String> fileTypes = new HashMap<>();
 
     public static void main(String[] args) throws IOException {
         InputStream releaseFile = Uploader.class.getResourceAsStream("/index.html");
         if (releaseFile != null) html = new String(releaseFile.readAllBytes(), StandardCharsets.UTF_8);
+        InputStream embedFile = Uploader.class.getResourceAsStream("/embed.html");
+        if (embedFile != null) embedHtml = new String(embedFile.readAllBytes(), StandardCharsets.UTF_8);
         try {
             InputStream kek = Uploader.class.getResourceAsStream("/release.json");
             release = new Config(GsonHelper.parseObject(new String(kek.readAllBytes(), StandardCharsets.UTF_8)));
@@ -46,8 +50,10 @@ public class Uploader {
         links.load();
         for (JsonElement element : h) {
             fileNames.put(((JsonObject) element).get("id").getAsString(), ((JsonObject) element).get("name").getAsString());
-            if (((JsonObject) element).has("delete"))
+            if (((JsonObject) element).has("delete") && !((JsonObject) element).get("delete").isJsonNull())
                 fileDeletes.put(((JsonObject) element).get("id").getAsString(), ((JsonObject) element).get("delete").getAsString());
+            if (((JsonObject) element).has("type") && !((JsonObject) element).get("type").isJsonNull())
+                fileTypes.put(((JsonObject) element).get("id").getAsString(), ((JsonObject) element).get("type").getAsString());
         }
         LOG.log("Hello, world!");
         mainFolder = new File(config.getString("folder", "./files"));
@@ -74,7 +80,47 @@ public class Uploader {
                     if (name.equals(id)) {
                         if (fileNames.containsKey(name))
                             res.setHeader("Content-Disposition", "filename=\"" + fileNames.get(name) + "\"");
+                        if (fileTypes.containsKey(name)) {
+                            res.setHeader("Content-Type", fileTypes.get(name));
+                            if(fileTypes.get(name).startsWith("video") || fileTypes.get(name).startsWith("audio")){
+                                res.setHeader("accept-ranges", "bytes");
+                                res.setHeader("content-range", "bytes "+req.getHeader("range").getFirst()+file.length()+"/"+(file.length()+1));
+                            }
+                        }
                         res.send(file.toPath());
+                        System.gc();
+                        break;
+                    }
+                }
+            }
+        });
+        server.all("/e/:id", (req, res) -> {
+            String id = req.getParam("id").split("\\.")[0];
+            for (File file : mainFolder.listFiles()) {
+                if (file.isFile()) {
+                    String name = file.getName().split("\\.")[0];
+                    if (name.equals(id)) {
+                        String cloviName = config.getString("name", "{host}")
+                                .replace("{host}", req.getHost().contains("localhost") || req.getHost().contains("127.0.0.1") ? "Clovi > Uploader" : req.getHost());
+                        String page = embedHtml;
+                        File filePage = new File("./embed.html");
+                        if (filePage.exists()) {
+                            try {
+                                page = Files.readString(filePage.toPath());
+                            } catch (Exception ignored) {
+                                ignored.printStackTrace();
+                            }
+                        }
+                        String type = fileTypes.getOrDefault(name, "file");
+                        String resHtml = page.replace("{hostname}", cloviName)
+                                .replace("{filename}", fileNames.getOrDefault(name, name))
+                                .replace("{id}", name)
+                                .replace("{type}", type.startsWith("video") ? "video" : type.startsWith("image") ? "image" : type.startsWith("audio") ? "audio" : "file")
+                                .replace("{filetype}", type)
+                                .replace("{accent_color}", config.getString("accent_color", "#7f916f"))
+                                .replace("{version}", release.getString("version", "1.98.4"));
+                        res.setContentType(MediaType._html);
+                        res.send(resHtml);
                         break;
                     }
                 }
@@ -108,16 +154,18 @@ public class Uploader {
                     } else {
                         String fileName = req.getHeader("X-File-Name").getFirst();
                         String fileType = fileName.split("\\.").length <= 1 ? "" : "." + fileName.split("\\.")[fileName.split("\\.").length - 1];
+                        String fileTypeMedia = req.getHeader("Content-Type").getFirst();
                         String id = makeID(7, false);
                         String delete_id = makeID(21, true);
                         File file = mainFolder.toPath().resolve(id + fileType).toFile();
                         saveFile(bytes, file);
                         bytes = null;
                         System.gc();
-                        addFilename(id, fileName, delete_id);
+                        addFilename(id, fileName, delete_id, fileTypeMedia);
                         JsonObject resp = new JsonObject();
                         resp.addProperty("id", id);
                         resp.addProperty("name", fileName);
+                        resp.addProperty("type", fileTypeMedia);
                         resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
                         resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
                         res.json(resp);
@@ -201,9 +249,10 @@ public class Uploader {
         LOG.log("-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 
-    public static void addFilename(String id, String name, String delete_id) {
+    public static void addFilename(String id, String name, String delete_id, String file_type_media) {
         fileNames.put(id, name);
         fileDeletes.put(id, delete_id);
+        fileTypes.put(id, file_type_media);
         saveFilenames();
     }
 
@@ -213,6 +262,7 @@ public class Uploader {
             JsonObject jj = new JsonObject();
             jj.addProperty("id", key);
             jj.addProperty("name", fileNames.get(key));
+            jj.addProperty("type", fileTypes.get(key));
             if (fileDeletes.containsKey(key))
                 jj.addProperty("delete", fileDeletes.get(key));
             j.add(jj);
