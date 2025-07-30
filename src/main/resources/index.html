@@ -24,21 +24,21 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         var width = window.innerWidth
-window.onresize = (event) => {
-    if (width != window.innerWidth) {
-        width = window.innerWidth;
-        adaptionModile();
-    }
-}
-function adaptionModile() {
-    if (window.innerWidth < 525) {
-        document.getElementsByTagName("body")[0].style = "padding-left: 0; padding-right: 0; margin-top: 0pt; margin-bottom: 0pt; border-radius: 0pt;"
-        document.getElementsByTagName("html")[0].style = "background-color: var(--background-content); background-image:none;"
-    } else {
-        document.getElementsByTagName("body")[0].style = "padding-left: 10pt; padding-right: 10pt;"
-        document.getElementsByTagName("html")[0].style = ""
-    }
-}
+        window.onresize = (event) => {
+            if (width != window.innerWidth) {
+                width = window.innerWidth;
+                adaptionModile();
+            }
+        }
+        function adaptionModile() {
+            if (window.innerWidth < 525) {
+                document.getElementsByTagName("body")[0].style = "padding-left: 0; padding-right: 0; margin-top: 0pt; margin-bottom: 0pt; border-radius: 0pt;"
+                document.getElementsByTagName("html")[0].style = "background-color: var(--background-content); background-image:none;"
+            } else {
+                document.getElementsByTagName("body")[0].style = "padding-left: 10pt; padding-right: 10pt;"
+                document.getElementsByTagName("html")[0].style = ""
+            }
+        }
 
         let fileInput;
         function preventDefaults(e) {
@@ -46,7 +46,7 @@ function adaptionModile() {
             e.stopPropagation();
         }
         document.addEventListener("DOMContentLoaded", function (event) {
-        adaptionModile();
+            adaptionModile();
             loadHistory()
             fileInput = document.getElementById("file");
             fileInput.addEventListener("change", (s) => {
@@ -122,7 +122,7 @@ function adaptionModile() {
                 .catch(error => {
                     document.getElementById("title").innerText = "Произошла ошибка!";
                     document.getElementById("msg").innerHTML = "<p>Возможно Роскомнадзор добрался до сюда</p>"
-                        document.getElementById("description").innerHTML = "Попробуйте ещё раз!"
+                    document.getElementById("description").innerHTML = "Попробуйте ещё раз!"
                     document.getElementById("msg").style.display = ""
                     console.error(error); // Handle upload errors
                 });
@@ -140,7 +140,7 @@ function adaptionModile() {
             }
             history = JSON.parse(localStorage.getItem("history"));
             for (i = 0; i < history.length; i++) {
-                if (history[i].type) addHistoryElement(history[i], i)
+                if (history[i].id) addHistoryElement(history[i], i)
                 else {
                     let args = history[i].split("/");
                     let newData = {
@@ -267,11 +267,14 @@ function adaptionModile() {
         :root {
             --background: #121212;
             --background-content: #1a1a1a;
+
             --base-color: {accent_color};
+
             --alpha-base-color: {accent_color}73;
             --font-color: #d5d5d5;
 
             --blockquote-background: {accent_color}1e;
+
             --blockquote: {accent_color};
 
             --scrollbar-background: #0000007f;
@@ -612,7 +615,7 @@ function adaptionModile() {
             border-radius: 4pt;
         }
 
-        p button{
+        p button {
             margin-top: 0;
             margin-bottom: 0;
         }
@@ -690,14 +693,18 @@ function adaptionModile() {
             border-radius: 8pt;
             margin-right: 3pt;
         }
-        div[id=warn] a{
+
+        div[id=warn] a {
             color: #fff;
         }
-        .delete{
+
+        .delete {
             background-color: #ff006e;
             color: #fff;
         }
-        .delete:focus, .delete:hover{
+
+        .delete:focus,
+        .delete:hover {
             background-color: #fff;
             color: var(--button-color);
         }
@@ -740,24 +747,26 @@ function adaptionModile() {
                 <!-- <p><a href="https://kelcu.ru/">Сделано с ❤ от Кела</a><br>v{version}</p>
                 <p><a href="https://clovi.ru/about">О проекте</a> <br> <a href="/catterino.png">Chatterino</a></p> -->
                 <div>
-					<img src="https://wf.kelcu.ru/icons/clover.png" width="50pt" align="left" id="header-icon">
-					<p id="header-text">Сделано с ❤ от Кела</p>
-				</div>
-				<nav class="info">
-					<ul class="list">
-						<li class="item" align="center">
-							<a class="link" href="https://clovi.ru/tos" style="padding:0;">Terms of Service / Privacy Policy</a><br>
-							<a class="link" href="https://clovi.ru/about">О проекте</a> / <a class="link" href="/catterino.png">Chatterino</a>
-						</li>
-					</ul>
-				</nav>
-				<nav class="menu">
-					<ul class="list">
-						<li class="item">
-							<a class="link" href="https://clovi.ru/about" id="contacts">© Clovi - 2025</a>
-						</li>
-					</ul>
-				</nav>
+                    <img src="https://wf.kelcu.ru/icons/clover.png" width="50pt" align="left" id="header-icon">
+                    <p id="header-text">Сделано с ❤ от Кела</p>
+                </div>
+                <nav class="info">
+                    <ul class="list">
+                        <li class="item" align="center">
+                            <a class="link" href="https://clovi.ru/tos" style="padding:0;">Terms of Service / Privacy
+                                Policy</a><br>
+                            <a class="link" href="https://clovi.ru/about">О проекте</a> / <a class="link"
+                                href="/catterino.png">Chatterino</a>
+                        </li>
+                    </ul>
+                </nav>
+                <nav class="menu">
+                    <ul class="list">
+                        <li class="item">
+                            <a class="link" href="https://clovi.ru/about" id="contacts">© Clovi - 2025</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </footer>
