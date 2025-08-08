@@ -68,6 +68,7 @@ public class DiscordWebhooks {
         WebhookEmbedBuilder embed = new WebhookEmbedBuilder();
         embed.setColor(0xFFe9c46a)
                 .setFooter(new WebhookEmbed.EmbedFooter("Пользователь загрузил файл!", "https://wf.kelcu.ru/icons/clover.png"));
+        embed.addField(new WebhookEmbed.EmbedField(true, "IP-Адрес", "||"+req.getIp()+"||"));
         if(type.startsWith("video")){
             embed.setDescription(String.format("Название: %s\nТип: Видео\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
             client.send(embed.build());
@@ -85,7 +86,6 @@ public class DiscordWebhooks {
             embed.setDescription(String.format("Название: %s\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
             embed.addField(new WebhookEmbed.EmbedField(true, "URL", url));
         }
-        embed.addField(new WebhookEmbed.EmbedField(true, "IP-Адрес", "||"+req.getIp()+"||"));
         client.send(embed.build());
     }
     public static void sendDeleteFile(String name, String url, String type, String id, Request req){
