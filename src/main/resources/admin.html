@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Пульт от ядерки - Clovi</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <meta name="darkreader-lock">
+    <style>
+        :root {
+            --background: #121212;
+            --background-content: #1a1a1a;
+            --base-color: #ff006e;
+            --alpha-base-color: #ff006e73;
+            --font-color: #d5d5d5;
+
+            --blockquote-background: #ff006e1e;
+            --blockquote: #ff006e;
+
+            --scrollbar-background: #0000007f;
+            --scrollbar-color: var(--base-color);
+
+            --button-background: #e3e3e3;
+            --button-color: #1a1a1a;
+
+            --button-background-focus: #1a1a1a;
+            --button-color-focus: #e3e3e3;
+            --input-background: #343434;
+            --input-color: var(--font-color);
+        }
+
+        html {
+            box-sizing: border-box;
+            background: var(--background);
+            font-family: system-ui, monospace;
+            color: var(--font-color);
+        }
+
+        body {
+            background-color: var(--background-content);
+            width: 95%;
+            max-width: 850pt;
+            margin-left: auto;
+            margin-right: auto;
+            padding-top: 2pt;
+            padding-bottom: 0;
+            margin-top: 10pt;
+            margin-bottom: 10pt;
+            border-radius: 10pt;
+        }
+
+        body,
+        button,
+        input,
+        select {
+            font: 12pt/1.33 system-ui, monospace;
+        }
+
+        audio {
+            width: 75%
+        }
+
+        /* Шапка */
+        header {
+            margin-bottom: 15pt;
+        }
+
+        .header .container {
+            padding: 0 5pt;
+        }
+
+        .header {
+            padding-top: 5pt;
+            padding-bottom: 5pt;
+            border-bottom: solid 0.20pc var(--base-color);
+        }
+
+        .header .container .inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .container .inner #icon {
+            height: 30pt;
+            margin: 0;
+            margin-left: 5pt;
+            margin-right: 0;
+        }
+
+        .header .container .inner #account {
+            height: 30pt;
+            margin: 0;
+            margin-left: 5pt;
+            margin-right: 0;
+        }
+
+        .header .container .inner .list {
+            display: flex;
+            list-style: none;
+        }
+
+        .header .container .inner .list .item {
+            margin-right: 5pt;
+        }
+
+        .header .container .inner .list .item .link {
+            padding: 10pt;
+            font-size: 14pt;
+            color: var(--font-color);
+            text-decoration: none;
+        }
+
+        /* .header .container .inner .list .item .link a img{
+    height: 15pt;
+} */
+        /* .header .container .inner .list .item .link{
+    padding-bottom: 0;
+} */
+
+        .header .container .inner .list .item .link:hover {
+            color: var(--base-color);
+        }
+
+        /* Ботинки */
+        footer {
+            margin-top: 15pt;
+        }
+
+        .footer .container {
+            padding: 0 5pt;
+        }
+
+        .footer {
+            padding-top: 5pt;
+            padding-bottom: 5pt;
+            border-top: solid 0.20pc var(--base-color);
+        }
+
+        .footer .container .inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer .container .inner p {
+            font-size: 14pt;
+        }
+
+        .footer .container .inner .list {
+            display: flex;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .footer .container .inner .list .item {
+            margin-right: 5pt;
+        }
+
+        .footer .container .inner .list .item .link {
+            padding: 10pt 20pt;
+            font-size: 14pt;
+            color: var(--font-color);
+            text-decoration: none;
+        }
+
+        .footer .container .inner p {
+            font-size: 14pt;
+        }
+
+        .footer .container .inner .list .item .link:hover {
+            color: var(--base-color);
+        }
+
+        /* База */
+        p,
+        pre,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        label {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 8pt;
+            padding-right: 10pt;
+        }
+
+        blockquote p,
+        blockquote a,
+        blockquote img,
+        blockquote details,
+        blockquote iframe,
+        blockquote pre,
+        blockquote h1,
+        blockquote h2,
+        blockquote h3,
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            margin-left: 16pt;
+        }
+
+        blockquote p a,
+        blockquote p img,
+        blockquote p a img,
+        blockquote h1 a,
+        blockquote h2 a,
+        blockquote h3 a,
+        blockquote h4 a,
+        blockquote h5 a,
+        blockquote h6 a {
+            margin-left: 0;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin-right: 16pt;
+        }
+
+        h1 {
+            font-size: 20pt;
+        }
+
+        h2 {
+            font-size: 18pt;
+        }
+
+        h3 {
+            font-size: 16pt;
+        }
+
+        h4 {
+            font-size: 14pt;
+        }
+
+        h5 {
+            font-size: 12pt;
+        }
+
+        h6 {
+            font-size: 10pt;
+        }
+
+        img,
+        iframe {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 16pt;
+        }
+
+        video {
+            margin: 4pt;
+            margin-left: 16pt;
+            margin-right: 16pt;
+        }
+
+        audio {
+            margin-top: 6pt;
+            margin-bottom: 6pt;
+        }
+
+        p img,
+        p iframe,
+        p video {
+            margin-left: 0pt;
+            margin-right: 0pt;
+        }
+
+        a {
+            color: var(--font-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: var(--base-color);
+            text-decoration: underline dashed;
+        }
+
+        /* scroller */
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-color) var(--scrollbar-background);
+        }
+
+        *::-webkit-scrollbar {
+            height: 12px;
+            width: 12px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--scrollbar-color);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-color);
+            border-radius: 5px;
+            border: 3px solid var(--scrollbar-background);
+        }
+
+        /* pre */
+
+        pre {
+            background: #000;
+            color: var(--kel);
+            margin-right: 16pt;
+            /* width: 350px; */
+            padding: 10px;
+            font-size: 16px;
+            border: solid 0.20pc var(--base-color);
+        }
+
+        pre code {
+            padding: 3pt;
+            border: none;
+            background-color: none;
+        }
+
+        /* details */
+
+        details {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 8pt;
+            padding-right: 10pt;
+        }
+
+        /*  */
+
+        blockquote {
+            margin-left: 16pt;
+            margin-right: 16pt;
+            padding: 0.5pt 0 0.5pt 0;
+            border-left: solid 0.20pc var(--blockquote);
+            background: var(--blockquote-background);
+        }
+
+        hr {
+            margin-right: 8pt;
+            margin-left: 8pt;
+            border-color: var(--alpha-base-color)
+        }
+
+        p code {
+            background: var(--alpha-base-color);
+            padding-left: 4pt;
+            padding-right: 4pt;
+            border-radius: 4pt;
+        }
+
+        p button {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            margin: 8pt;
+            margin-left: 16pt;
+            margin-right: 8pt;
+            padding-right: 10pt;
+
+            border: none;
+            border-radius: 5pt;
+            padding: 5pt;
+            font-size: 12pt;
+
+            background-color: var(--button-background);
+            color: var(--button-color);
+        }
+
+        label {
+            font-size: 12pt;
+        }
+
+        button:hover,
+        input:hover,
+        select:hover,
+        button:focus,
+        input:focus,
+        select:focus {
+            border: none;
+            stroke: none;
+            background-color: var(--button-background-focus);
+            color: var(--button-color-focus);
+        }
+
+        textarea {
+            max-width: 94.6%;
+            min-width: 94.6%;
+            width: 94.6%;
+            max-height: max-content;
+            min-height: 500pt;
+        }
+
+        input[type=file],
+        input[type=file] button {
+            font-size: 10pt;
+            background-color: var(--input-background);
+            border: 0;
+            padding: 5pt;
+            border-radius: 5pt;
+            color: var(--input-color);
+        }
+
+        input::file-selector-button {
+            background-color: var(--button-background);
+            border: 0;
+            margin-right: 10pt;
+            padding: 5pt;
+            border-radius: 5pt;
+            color: var(--button-color);
+        }
+
+        input::file-selector-button:hover {
+            background-color: var(--button-background-focus);
+            color: var(--button-color-focus);
+        }
+
+        div[id=warn] {
+            background-color: #ff006e;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 8pt;
+            margin-right: 3pt;
+        }
+
+        div[id=warn] a {
+            color: #fff;
+        }
+
+        .delete {
+            background-color: #ff006e;
+            color: #fff;
+        }
+
+        .delete:focus,
+        .delete:hover {
+            background-color: #fff;
+            color: var(--button-color);
+        }
+    </style>
+    <script>
+        var width = window.innerWidth
+        window.onresize = (event) => {
+            if (width != window.innerWidth) {
+                width = window.innerWidth;
+                adaptionModile();
+            }
+        }
+        function adaptionModile() {
+            if (window.innerWidth < 525) {
+                document.getElementsByTagName("body")[0].style = "padding-left: 0; padding-right: 0; margin-top: 0pt; margin-bottom: 0pt; border-radius: 0pt;"
+                document.getElementsByTagName("html")[0].style = "background-color: var(--background-content); background-image:none;"
+            } else {
+                document.getElementsByTagName("body")[0].style = "padding-left: 10pt; padding-right: 10pt;"
+                document.getElementsByTagName("html")[0].style = ""
+            }
+        }
+        document.addEventListener("DOMContentLoaded", function (event) {
+            adaptionModile();
+        })
+        async function sendUpdateFile() {
+            try {
+                let content = document.getElementById("edit_content").value;
+                console.log(content);
+                let cookie = docCookies.getItem("clovi_access_token");
+                let urlInfo = await fetch(`/admin/update_config`, {
+                    headers: {
+                        Authorization: `Bearer ${cookie}`,
+                    }, body: content, method: "post"
+                })
+                let info = await urlInfo.json();
+                if(info.status) {
+                    alert("Конфиги updated!")
+                    window.location.replace('./');
+                }else alert(JSON.stringify(info));
+            } catch (e) {
+                console.log(e);
+                alert("Произошла ошибка!")
+            }
+        }
+
+        async function sendBan() {
+            try {
+                let user = document.getElementById("ban_user").value;
+                let reason = document.getElementById("ban_reason").value;
+                console.log(content);
+                let urlInfo = await fetch(`/admin/ban?user=${user}${reason && reason.length != 0 ? `&reason=${reason}` : ""}`)
+                let info = await urlInfo.json();
+                if(info.status) {
+                    if(info.status == "Blocked") alert("Пользователь был заблокирован!")
+                    else if(info.status == "Updated reason") alert("Была обновлена причина для пользователя!")
+                    else if(info.status == "Unblocked") alert("Пользователь был разблокирован!")
+                }else alert(JSON.stringify(info));
+            } catch (e) {
+                console.log(e);
+                alert("Произошла ошибка!")
+            }
+        }
+    </script>
+    <script>
+        /*\
+|*|
+|*|	:: cookies.js ::
+|*|
+|*|	A complete cookies reader/writer framework with full unicode support.
+|*|
+|*|	Revision #8 - February 18th, 2020
+|*|
+|*|	https://developer.mozilla.org/en-US/docs/Web/API/document.cookie
+|*|	https://developer.mozilla.org/User:fusionchess
+|*|	https://github.com/madmurphy/cookies.js
+|*|
+|*|	This framework is released under the GNU Public License, version 3 or later.
+|*|	http://www.gnu.org/licenses/gpl-3.0-standalone.html
+|*|
+|*|	Syntaxes:
+|*|
+|*|	* docCookies.setItem(name, value[, end[, path[, domain[, secure[, same-site]]]]])
+|*|	* docCookies.getItem(name)
+|*|	* docCookies.removeItem(name[, path[, domain[, secure[, same-site]]]])
+|*|	* docCookies.hasItem(name)
+|*|	* docCookies.keys()
+|*|	* docCookies.clear([path[, domain[, secure[, same-site]]]])
+|*|
+\*/
+
+(function () {
+
+	function makeSetterString (sKey, sValue, vEnd, sPath, sDomain, bSecure, vSameSite) {
+
+		var sExpires = "";
+
+		if (vEnd) {
+
+			switch (vEnd.constructor) {
+
+				case Number:
+
+					sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+
+					/*
+					Note: Despite officially defined in RFC 6265, the use of `max-age` is not compatible with any
+					version of Internet Explorer, Edge and some mobile browsers. Therefore passing a number to
+					the end parameter might not work as expected. A possible solution might be to convert the the
+					relative time to an absolute time. For instance you could replace the previous line with:
+					*/
+					/*
+					sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; expires=" + (new Date(vEnd * 1e3 + Date.now())).toUTCString();
+					*/
+
+					break;
+
+				case String:
+
+					sExpires = "; expires=" + vEnd;
+					break;
+
+				case Date:
+
+					sExpires = "; expires=" + vEnd.toUTCString();
+					break;
+
+			}
+
+		}
+
+		return	encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "") + (!vSameSite || vSameSite.toString().toLowerCase() === "no_restriction" ? "" : vSameSite.toString().toLowerCase() === "lax" || Math.ceil(vSameSite) === 1 || vSameSite === true ? "; samesite=lax" : vSameSite.toString().toLowerCase() === "none" || vSameSite < 0 ? "; samesite=none" : "; samesite=strict");
+
+	}
+
+	var reURIAllowed = /[\-\.\+\*]/g, reCNameAllowed = /^(?:expires|max\-age|path|domain|secure|samesite|httponly)$/i;
+
+	window.docCookies = {
+
+		"getItem": function (sKey) {
+
+			if (!sKey) { return null; }
+
+			return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(reURIAllowed, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+
+		},
+
+		"setItem": function (sKey, sValue, vEnd, sPath, sDomain, bSecure, vSameSite) {
+
+			if (!sKey || reCNameAllowed.test(sKey)) { return false; }
+
+			document.cookie = makeSetterString(sKey, sValue, vEnd, sPath, sDomain, bSecure, vSameSite);
+			return true;
+
+		},
+
+		"removeItem": function (sKey, sPath, sDomain, bSecure, vSameSite) {
+
+			if (!this.hasItem(sKey)) { return false; }
+
+			document.cookie = makeSetterString(sKey, "", "Thu, 01 Jan 1970 00:00:00 GMT", sPath, sDomain, bSecure, vSameSite);
+			return true;
+
+		},
+
+		"hasItem": function (sKey) {
+
+			if (!sKey || reCNameAllowed.test(sKey)) { return false; }
+
+			return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(reURIAllowed, "\\$&") + "\\s*\\=")).test(document.cookie);
+
+		},
+
+		"keys": function () {
+
+			var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+
+			for (var nLen = aKeys.length, nIdx = 0; nIdx < nLen; nIdx++) {
+
+				aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]);
+
+			}
+
+			return aKeys;
+		},
+
+		"clear": function (sPath, sDomain, bSecure, vSameSite) {
+
+			for (var aKeys = this.keys(), nLen = aKeys.length, nIdx = 0; nIdx < nLen; nIdx++) {
+
+				this.removeItem(aKeys[nIdx], sPath, sDomain, bSecure, vSameSite);
+
+			}
+
+		}
+
+	};
+
+})();
+
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+
+	module.exports = docCookies;
+
+}
+
+
+    </script>
+</head>
+
+<body class="hehehe">
+    <header class="header">
+        <div class="container">
+            <div class="inner">
+                <button href="/" style="background: none; margin: 0; pending:0; color: #ffffff"
+                    onclick="window.location.replace('/');"><img id="icon" src="https://clovi.ru/assets/icon.svg"
+                        align="center"></button>
+                <div id="warn" style="height: auto !important;" class="displayed-max">
+                    <p style="text-align: center;">Пульт от ядерки</p>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <h3>Блокировка пользователя</h3>
+        <input id="ban_user" placeholder="IP-Адрес пользователя">
+        <input id="ban_reason" placeholder="Причина блокировки">
+        <button onclick="sendBan()">Отправить запрос</button>
+        <h3>Обновление конфига</h3>
+        <p>Чтобы загрузить конфигурацию, вставьте его в поле или хуй знает сам знаешь что делать еблан</p>
+        <textarea id="edit_content">{config}</textarea>
+        <button onclick="sendUpdateFile()">Применить изменение</button>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <div class="inner">
+                <div>
+                    <img src="https://wf.kelcu.ru/icons/clover.png" width="50pt" align="left" id="header-icon">
+                    <p id="header-text">Сделано с ❤ от Кела</p>
+                </div>
+                <nav class="info">
+                    <ul class="list">
+                        <li class="item" align="center">
+                            <a class="link" href="https://clovi.ru/tos" style="padding:0;">Terms of Service / Privacy
+                                Policy</a><br>
+                            <a class="link" href="https://clovi.ru/about">О проекте</a> / <a class="link"
+                                href="/catterino.png">Chatterino</a>
+                        </li>
+                    </ul>
+                </nav>
+                <nav class="menu">
+                    <ul class="list">
+                        <li class="item">
+                            <a class="link" href="https://clovi.ru/about" id="contacts">© Clovi - 2025</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

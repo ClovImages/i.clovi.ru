@@ -16,30 +16,40 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static ru.kelcuprum.waterfiles.DiscordWebhooks.sendBanUser;
 import static ru.kelcuprum.waterfiles.Objects.*;
 
 public class Uploader {
     public static Express server;
     public static Config config = new Config("./config.json");
+    public static Config bans = new Config("./bans.json");
     public static Config links = new Config("./files.json");
     public static File mainFolder = new File("./files");
     public static String html = "";
     public static String embedHtml = "";
+    public static String adminHtml = "";
+    public static String banHtml = "";
     public static byte[] favicon = null;
     public static Config release = new Config(new JsonObject());
     public static HashMap<String, String> fileNames = new HashMap<>();
     public static HashMap<String, String> fileDeletes = new HashMap<>();
     public static HashMap<String, String> fileTypes = new HashMap<>();
+    public static String secretKey = config.getString("secret_token", "");
 
     public static void main(String[] args) throws IOException {
         InputStream releaseFile = Uploader.class.getResourceAsStream("/index.html");
         if (releaseFile != null) html = new String(releaseFile.readAllBytes(), StandardCharsets.UTF_8);
         InputStream embedFile = Uploader.class.getResourceAsStream("/embed.html");
         if (embedFile != null) embedHtml = new String(embedFile.readAllBytes(), StandardCharsets.UTF_8);
+        InputStream adminFile = Uploader.class.getResourceAsStream("/admin.html");
+        if (adminFile != null) adminHtml = new String(adminFile.readAllBytes(), StandardCharsets.UTF_8);
+        InputStream banFile = Uploader.class.getResourceAsStream("/ban.html");
+        if (banFile != null) banHtml = new String(banFile.readAllBytes(), StandardCharsets.UTF_8);
         try {
             InputStream kek = Uploader.class.getResourceAsStream("/release.json");
             release = new Config(GsonHelper.parseObject(new String(kek.readAllBytes(), StandardCharsets.UTF_8)));
@@ -62,7 +72,88 @@ public class Uploader {
         server = new Express();
         server.use(Middleware.cors());
         server.use((req, res) -> LOG.log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
+        server.use((req, res) -> {
+            String jsonObject = bans.getString(req.getIp(), null);
+            if (jsonObject != null) {
+                LOG.log(String.format("[BANNED] %s сделал запрос на %s", req.getIp(), req.getPath()));
+                res.setStatus(403);
+
+                if (banHtml != null && !banHtml.isBlank()) {
+                    res.setContentType(MediaType._html);
+                    res.send(banHtml.replace("{reason}", jsonObject));
+                } else {
+                    res.send(String.format("You has been blocked! Reason: %s", jsonObject));
+                }
+            }
+        });
         // -=-=-=-=-
+        if (adminHtml != null && !adminHtml.isBlank()) {
+            server.post("/admin/update_config", (req, res) -> {
+                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)) {
+                    try {
+                        InputStream IS = req.getBody();
+                        LOG.log((IS == null) + "");
+                        String isString = IS == null ? "{}" : isToString(IS);
+                        LOG.log(isString);
+                        if (IS != null && !isString.isEmpty()) {
+                            Files.writeString(Path.of("./config.json"), isString, StandardCharsets.UTF_8);
+                            DiscordWebhooks.sendRerunning(req);
+                            res.json("{\"message\": \"Config has been updated!\", \"status\": true}");
+                            server.stop();
+                            System.exit(0);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            server.get("/admin/ban", (req, res) -> {
+                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)) {
+                    if(req.getQuery("user") == null){
+                        res.setStatus(400);
+                        res.json(BAD_REQUEST);
+                        return;
+                    }
+                    try {
+                        String user = req.getQuery("user");
+                        String reason = req.getQuery("reason");
+                        String ban = bans.getString(user, null);
+                        String status;
+                        if(ban == null) {
+                            bans.setString(user, reason == null ? "" : reason);
+                            status = "Blocked";
+                        } else if(reason != null) {
+                            bans.setString(user, reason);
+                            status = "Updated reason";
+                        } else {
+                            bans.setString(user, null);
+                            status = "Unblocked";
+                        }
+                        JsonObject jsonObject = new JsonObject();
+                        jsonObject.addProperty("status", status);
+                        jsonObject.addProperty("user", user);
+                        jsonObject.addProperty("reason", reason);
+                        bans.save();
+                        sendBanUser(user, reason, status, req);
+                        res.json(jsonObject);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            server.get("/1984", (req, res) -> {
+                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)){
+                    res.setContentType(MediaType._html);
+                    String configString = config.toString();
+                    try {
+                        configString = Files.readString(Path.of("./config.json"));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    res.send(adminHtml.replace("{config}", configString));
+                }
+            });
+        }
         server.all((req, res) -> {
             String mainHostname = config.getString("hostname", "");
             if(!mainHostname.isEmpty()){
@@ -140,6 +231,17 @@ public class Uploader {
                 res.json(BAD_REQUEST);
             } else {
                 try {
+                    if (req.getContentLength() > 104857600*2.5) {
+                        res.setStatus(413);
+                        JsonObject error = new JsonObject();
+                        error.addProperty("code", 413);
+                        error.addProperty("codename", "Payload Too Large");
+                        error.addProperty("message", "File is over 100mb!");
+                        JsonObject resp = new JsonObject();
+                        resp.add("error", error);
+                        res.json(resp);
+                        return;
+                    }
                     byte[] bytes = req.getBody().readAllBytes();
                     try {
                         MultipartParser parser = new MultipartParser();
@@ -150,16 +252,6 @@ public class Uploader {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-                    if (bytes.length > 104857600) {
-                        res.setStatus(413);
-                        JsonObject error = new JsonObject();
-                        error.addProperty("code", 413);
-                        error.addProperty("codename", "Payload Too Large");
-                        error.addProperty("message", "Файл весит больше 100мб!");
-                        JsonObject resp = new JsonObject();
-                        resp.add("error", error);
-                        res.json(resp);
-                    } else {
                         String fileName = req.getHeader("X-File-Name").getFirst();
                         String fileType = fileName.split("\\.").length <= 1 ? "" : "." + fileName.split("\\.")[fileName.split("\\.").length - 1];
                         String fileTypeMedia = req.getHeader("Content-Type").getFirst();
@@ -177,7 +269,7 @@ public class Uploader {
                         resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
                         resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
                         res.json(resp);
-                    }
+                        DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/f/%2$s", "http://"+req.getHost(), id), fileTypeMedia, id, delete_id, req);
                 } catch (Exception e) {
                     e.printStackTrace();
                     res.setStatus(500);
@@ -197,6 +289,7 @@ public class Uploader {
                         String name = file.getName().split("\\.")[0];
                         if (name.equals(idFile)) {
                             file.delete();
+                            DiscordWebhooks.sendDeleteFile(fileNames.get(name), "/f/" + name, fileTypes.getOrDefault(name, "file"), name, req);
                             fileNames.remove(idFile);
                             fileDeletes.remove(idFile);
                             res.send("File deleted");
@@ -255,6 +348,18 @@ public class Uploader {
         LOG.log("Uploader запущен!");
         LOG.log(String.format("Порт: %s", config.getNumber("port", 1984).intValue()));
         LOG.log("-=-=-=-=-=-=-=-=-=-=-=-=-");
+        DiscordWebhooks.run();
+        DiscordWebhooks.sendRunning();
+        if(secretKey.isEmpty()){
+            secretKey = String.format("%s-%s-%s-%s", makeID(20), makeID(20), makeID(20), makeID(20));
+            config.setString("secret_token", secretKey);
+            DiscordWebhooks.sendGeneratedSecretToken();
+        }
+    }
+
+    public static String isToString(InputStream is) throws IOException {
+        byte[] requestBodyBytes = is.readAllBytes();
+        return new String(requestBodyBytes);
     }
 
     public static void addFilename(String id, String name, String delete_id, String file_type_media) {
@@ -283,16 +388,28 @@ public class Uploader {
         Files.write(targetFile.toPath(), is);
     }
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     public static String makeID(int length, boolean isDelete) {
         StringBuilder result = new StringBuilder();
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         int charactersLength = characters.length();
         int counter = 0;
         while (counter < length) {
-            result.append(characters.charAt((int) Math.floor(Math.random() * charactersLength)));
+            result.append(characters.charAt(SECURE_RANDOM.nextInt(charactersLength)));
             counter += 1;
         }
         return isIDCorrect(result.toString(), isDelete) ? result.toString() : makeID(length, isDelete);
+    }
+    public static String makeID(int length) {
+        StringBuilder result = new StringBuilder();
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        int charactersLength = characters.length();
+        int counter = 0;
+        while (counter < length) {
+            result.append(characters.charAt(SECURE_RANDOM.nextInt(charactersLength)));
+            counter += 1;
+        }
+        return result.toString();
     }
 
     public static boolean isIDCorrect(String id, boolean isDelete) {

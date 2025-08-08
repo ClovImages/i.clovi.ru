@@ -26,11 +26,11 @@ dependencies {
 
     // Express.JS :ImFine:
     shadow implementation('ru.kelcuprum:java-express:0.2.4-dev.15');
-    shadow implementation("commons-fileupload:commons-fileupload:1.5")
 
     // Libs
     shadow implementation("ch.qos.logback:logback-classic:1.4.14")
     shadow implementation("ru.kelcuprum:CaffeineLib:1.0.0-dev.2")
+    shadow implementation('club.minnced:discord-webhooks:0.8.4')
 
     // JSON
     shadow implementation("com.google.code.gson:gson:2.10.1")
