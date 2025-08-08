@@ -269,7 +269,7 @@ public class Uploader {
                         resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
                         resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
                         res.json(resp);
-                        DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/f/%2$s", "http://"+req.getHost(), id), fileTypeMedia, id, delete_id, req);
+                        DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/%2$s", "http://"+req.getHost(), id), fileTypeMedia, id, delete_id, req);
                 } catch (Exception e) {
                     e.printStackTrace();
                     res.setStatus(500);
