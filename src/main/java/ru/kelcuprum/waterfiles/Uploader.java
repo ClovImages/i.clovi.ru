@@ -289,7 +289,7 @@ public class Uploader {
                         String name = file.getName().split("\\.")[0];
                         if (name.equals(idFile)) {
                             file.delete();
-                            DiscordWebhooks.sendDeleteFile(fileNames.get(name), "/f/" + name, fileTypes.getOrDefault(name, "file"), name, req);
+                            DiscordWebhooks.sendDeleteFile(fileNames.get(name), "/" + name, fileTypes.getOrDefault(name, "file"), name, req);
                             fileNames.remove(idFile);
                             fileDeletes.remove(idFile);
                             res.send("File deleted");
