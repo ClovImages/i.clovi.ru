@@ -77,6 +77,7 @@ public class DiscordWebhooks {
             embed.setDescription(String.format("Название: %s\nТип: Изображение\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
             client.send(embed.build());
             client.send("||"+url+"||");
+            return;
         } else if(type.startsWith("audio")){
             embed.setDescription(String.format("Название: %s\nТип: Аудио\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
             embed.addField(new WebhookEmbed.EmbedField(true, "URL", url));
