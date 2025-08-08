@@ -75,7 +75,8 @@ public class DiscordWebhooks {
             return;
         } else if(type.startsWith("image")){
             embed.setDescription(String.format("Название: %s\nТип: Изображение\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
-            embed.setImageUrl("||"+url+"||");
+            client.send(embed.build());
+            client.send("||"+url+"||");
         } else if(type.startsWith("audio")){
             embed.setDescription(String.format("Название: %s\nТип: Аудио\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
             embed.addField(new WebhookEmbed.EmbedField(true, "URL", url));
