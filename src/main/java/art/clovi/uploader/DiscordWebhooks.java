@@ -1,12 +1,12 @@
-package ru.kelcuprum.waterfiles;
+package art.clovi.uploader;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import express.http.request.Request;
 
-import static ru.kelcuprum.waterfiles.Uploader.LOG;
-import static ru.kelcuprum.waterfiles.Uploader.release;
+import static art.clovi.uploader.Uploader.LOG;
+import static art.clovi.uploader.Uploader.release;
 
 public class DiscordWebhooks {
     public static boolean available = false;

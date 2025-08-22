@@ -1,5 +1,6 @@
-package ru.kelcuprum.waterfiles;
+package art.clovi.uploader;
 
+import art.clovi.uploader.utils.MultipartParser;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -16,13 +17,14 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 
+import static art.clovi.uploader.utils.Utils.isToString;
+import static art.clovi.uploader.utils.Utils.makeID;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static ru.kelcuprum.waterfiles.DiscordWebhooks.sendBanUser;
-import static ru.kelcuprum.waterfiles.Objects.*;
+import static art.clovi.uploader.DiscordWebhooks.sendBanUser;
+import static art.clovi.uploader.Objects.*;
 
 public class Uploader {
     public static Express server;
@@ -141,6 +143,26 @@ public class Uploader {
                     }
                 }
             });
+            server.all("/admin/delete/:id", (req, res) -> {
+                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)) {
+                    String id = req.getParam("id").split("\\.")[0];
+                    for (File file : mainFolder.listFiles()) {
+                        if (file.isFile()) {
+                            String name = file.getName().split("\\.")[0];
+                            if (name.equals(id)) {
+                                file.delete();
+                                DiscordWebhooks.sendDeleteFile(fileNames.get(name), "/" + name, fileTypes.getOrDefault(name, "file"), name, req);
+                                fileNames.remove(name);
+                                fileDeletes.remove(name);
+                                res.send("File deleted");
+                                System.gc();
+                                break;
+                            }
+                        }
+                    }
+                    res.send("File not deleted");
+                }
+            });
             server.get("/1984", (req, res) -> {
                 if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)){
                     res.setContentType(MediaType._html);
@@ -155,11 +177,18 @@ public class Uploader {
             });
         }
         server.all((req, res) -> {
-            String mainHostname = config.getString("hostname", "");
-            if(!mainHostname.isEmpty()){
-                if(!req.getHost().equals(mainHostname)){
+            String[] mainHostnames = config.getString("hostname", "").replace(" ", "").split(",");
+            if(mainHostnames.length != 0){
+                boolean isFollowed = false;
+                for(String domain : mainHostnames){
+                    if(req.getHost().equals(domain)){
+                        isFollowed = true;
+                        break;
+                    }
+                }
+                if(!isFollowed){
                     String protocol = req.getProtocol().startsWith("HTTP/") ? "http" : "https";
-                    res.redirect(String.format("%s://%s%s",protocol, mainHostname, req.getPath()));
+                    res.redirect(String.format("%s://%s%s",protocol, mainHostnames[0], req.getPath()));
                 }
             }
         });
@@ -180,6 +209,7 @@ public class Uploader {
                             } else if(fileTypes.get(name).startsWith("text")) {
                                 try {
                                     res.sendBytes(Files.readString(file.toPath(), UTF_8).getBytes(), MediaType._txt.getMIME());
+                                    System.gc();
                                 } catch (Exception EX){
                                     EX.printStackTrace();
                                 }
@@ -252,24 +282,24 @@ public class Uploader {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-                        String fileName = req.getHeader("X-File-Name").getFirst();
-                        String fileType = fileName.split("\\.").length <= 1 ? "" : "." + fileName.split("\\.")[fileName.split("\\.").length - 1];
-                        String fileTypeMedia = req.getHeader("Content-Type").getFirst();
-                        String id = makeID(7, false);
-                        String delete_id = makeID(21, true);
-                        File file = mainFolder.toPath().resolve(id + fileType).toFile();
-                        saveFile(bytes, file);
-                        bytes = null;
-                        System.gc();
-                        addFilename(id, fileName, delete_id, fileTypeMedia);
-                        JsonObject resp = new JsonObject();
-                        resp.addProperty("id", id);
-                        resp.addProperty("name", fileName);
-                        resp.addProperty("type", fileTypeMedia);
-                        resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
-                        resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
-                        res.json(resp);
-                        DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/%2$s", "http://"+req.getHost(), id), fileTypeMedia, id, delete_id, req);
+                    String fileName = req.getHeader("X-File-Name").getFirst();
+                    String fileType = fileName.split("\\.").length <= 1 ? "" : "." + fileName.split("\\.")[fileName.split("\\.").length - 1];
+                    String fileTypeMedia = req.getHeader("Content-Type").getFirst();
+                    String id = makeID(7, false);
+                    String delete_id = makeID(21, true);
+                    File file = mainFolder.toPath().resolve(id + fileType).toFile();
+                    saveFile(bytes, file);
+                    bytes = null;
+                    System.gc();
+                    addFilename(id, fileName, delete_id, fileTypeMedia);
+                    JsonObject resp = new JsonObject();
+                    resp.addProperty("id", id);
+                    resp.addProperty("name", fileName);
+                    resp.addProperty("type", fileTypeMedia);
+                    resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
+                    resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
+                    res.json(resp);
+                    DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/%2$s", "http://"+req.getHost(), id), fileTypeMedia, id, delete_id, req);
                 } catch (Exception e) {
                     e.printStackTrace();
                     res.setStatus(500);
@@ -357,11 +387,6 @@ public class Uploader {
         }
     }
 
-    public static String isToString(InputStream is) throws IOException {
-        byte[] requestBodyBytes = is.readAllBytes();
-        return new String(requestBodyBytes);
-    }
-
     public static void addFilename(String id, String name, String delete_id, String file_type_media) {
         fileNames.put(id, name);
         fileDeletes.put(id, delete_id);
@@ -388,39 +413,6 @@ public class Uploader {
         Files.write(targetFile.toPath(), is);
     }
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    public static String makeID(int length, boolean isDelete) {
-        StringBuilder result = new StringBuilder();
-        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        int charactersLength = characters.length();
-        int counter = 0;
-        while (counter < length) {
-            result.append(characters.charAt(SECURE_RANDOM.nextInt(charactersLength)));
-            counter += 1;
-        }
-        return isIDCorrect(result.toString(), isDelete) ? result.toString() : makeID(length, isDelete);
-    }
-    public static String makeID(int length) {
-        StringBuilder result = new StringBuilder();
-        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        int charactersLength = characters.length();
-        int counter = 0;
-        while (counter < length) {
-            result.append(characters.charAt(SECURE_RANDOM.nextInt(charactersLength)));
-            counter += 1;
-        }
-        return result.toString();
-    }
-
-    public static boolean isIDCorrect(String id, boolean isDelete) {
-        if (!isDelete) {
-            for (File file : mainFolder.listFiles())
-                if (file.isFile())
-                    if (file.getName().split("\\.")[0].equals(id)) return false;
-        } else return !fileDeletes.containsKey(id);
-        return true;
-    }
-
     public static void checkFolders() throws IOException {
         try {
             if (!mainFolder.exists()) Files.createDirectory(mainFolder.toPath());
@@ -430,23 +422,4 @@ public class Uploader {
     }
 
     public static CoffeeLogger LOG = new CoffeeLogger("WaterFiles/Uploader");
-
-    static long kilo = 1024;
-    static long mega = kilo * kilo;
-    static long giga = mega * kilo;
-    static long tera = giga * kilo;
-
-    public static String getParsedFileSize(long size) {
-        String s;
-        double kb = (double) size / kilo;
-        double mb = kb / kilo;
-        double gb = mb / kilo;
-        double tb = gb / kilo;
-        if (size < kilo) s = size + " Bytes";
-        else if (size < mega) s = String.format("%.2f", kb) + " KB";
-        else if (size < giga) s = String.format("%.2f", mb) + " MB";
-        else if (size < tera) s = String.format("%.2f", gb) + " GB";
-        else s = String.format("%.2f", tb) + " TB";
-        return s;
-    }
 }

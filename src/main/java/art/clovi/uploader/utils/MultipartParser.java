@@ -1,4 +1,4 @@
-package ru.kelcuprum.waterfiles;
+package art.clovi.uploader.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
