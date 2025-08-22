@@ -473,7 +473,7 @@
             try {
                 let content = document.getElementById("edit_content").value;
                 console.log(content);
-                let cookie = docCookies.getItem("clovi_access_token");
+                let cookie = docCookies.getItem("clovi_uploader_access_token");
                 let urlInfo = await fetch(`/admin/update_config`, {
                     headers: {
                         Authorization: `Bearer ${cookie}`,

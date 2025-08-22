@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 
 import static art.clovi.uploader.Uploader.fileDeletes;
 import static art.clovi.uploader.Uploader.mainFolder;
+import static java.lang.Long.parseLong;
 
 public class Utils {
     public static String isToString(InputStream is) throws IOException {
@@ -64,5 +65,16 @@ public class Utils {
         else if (size < tera) s = String.format("%.2f", gb) + " GB";
         else s = String.format("%.2f", tb) + " TB";
         return s;
+    }
+
+    public static long getKilo(String size) {
+        String type = size.replaceAll("[0-9]", "");
+        String factSize = size.replaceAll("[^0-9]", "");
+        return switch (type.toLowerCase()){
+            case "mb" -> parseLong(factSize)*mega;
+            case "gb" -> parseLong(factSize)*giga;
+            case "tb" -> parseLong(factSize)*tera;
+            default -> parseLong(factSize);
+        };
     }
 }

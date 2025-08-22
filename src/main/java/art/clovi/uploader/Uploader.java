@@ -1,10 +1,16 @@
 package art.clovi.uploader;
 
+import art.clovi.uploader.auth.OAuth;
+import art.clovi.uploader.auth.Users;
+import art.clovi.uploader.objects.Objects;
+import art.clovi.uploader.objects.auth.User;
 import art.clovi.uploader.utils.MultipartParser;
+import art.clovi.uploader.utils.Utils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import express.Express;
+import express.http.request.Request;
 import express.middleware.FileStatics;
 import express.middleware.Middleware;
 import express.utils.MediaType;
@@ -20,11 +26,10 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 
-import static art.clovi.uploader.utils.Utils.isToString;
-import static art.clovi.uploader.utils.Utils.makeID;
+import static art.clovi.uploader.utils.Utils.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static art.clovi.uploader.DiscordWebhooks.sendBanUser;
-import static art.clovi.uploader.Objects.*;
+import static art.clovi.uploader.objects.Objects.*;
 
 public class Uploader {
     public static Express server;
@@ -36,13 +41,20 @@ public class Uploader {
     public static String embedHtml = "";
     public static String adminHtml = "";
     public static String banHtml = "";
+    public static String authHtml = "";
     public static byte[] favicon = null;
     public static Config release = new Config(new JsonObject());
     public static HashMap<String, String> fileNames = new HashMap<>();
     public static HashMap<String, String> fileDeletes = new HashMap<>();
     public static HashMap<String, String> fileTypes = new HashMap<>();
     public static String secretKey = config.getString("secret_token", "");
-
+    
+    public static boolean isAdmin(Request req){
+        User user = Users.getUserFromRequest(req);
+        if(user != null && user.role.ADMINISTRATION_TOOL) return true;
+        return req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey);
+    }
+    
     public static void main(String[] args) throws IOException {
         InputStream releaseFile = Uploader.class.getResourceAsStream("/index.html");
         if (releaseFile != null) html = new String(releaseFile.readAllBytes(), StandardCharsets.UTF_8);
@@ -52,6 +64,8 @@ public class Uploader {
         if (adminFile != null) adminHtml = new String(adminFile.readAllBytes(), StandardCharsets.UTF_8);
         InputStream banFile = Uploader.class.getResourceAsStream("/ban.html");
         if (banFile != null) banHtml = new String(banFile.readAllBytes(), StandardCharsets.UTF_8);
+        InputStream authFile = Uploader.class.getResourceAsStream("/auth.html");
+        if (authFile != null) authHtml = new String(authFile.readAllBytes(), StandardCharsets.UTF_8);
         try {
             InputStream kek = Uploader.class.getResourceAsStream("/release.json");
             release = new Config(GsonHelper.parseObject(new String(kek.readAllBytes(), StandardCharsets.UTF_8)));
@@ -59,6 +73,7 @@ public class Uploader {
         } catch (IOException e) {
             LOG.debug(e.getMessage());
         }
+        loadRoles();
         JsonArray h = links.getJsonArray("names", new JsonArray());
         links.load();
         for (JsonElement element : h) {
@@ -75,23 +90,25 @@ public class Uploader {
         server.use(Middleware.cors());
         server.use((req, res) -> LOG.log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
         server.use((req, res) -> {
-            String jsonObject = bans.getString(req.getIp(), null);
-            if (jsonObject != null) {
-                LOG.log(String.format("[BANNED] %s сделал запрос на %s", req.getIp(), req.getPath()));
-                res.setStatus(403);
+            if(req.getPath().equals("/") || req.getPath().startsWith("/upload")) {
+                String jsonObject = bans.getString(req.getIp(), null);
+                if (jsonObject != null) {
+                    LOG.log(String.format("[BANNED] %s сделал запрос на %s", req.getIp(), req.getPath()));
+                    res.setStatus(403);
 
-                if (banHtml != null && !banHtml.isBlank()) {
-                    res.setContentType(MediaType._html);
-                    res.send(banHtml.replace("{reason}", jsonObject));
-                } else {
-                    res.send(String.format("You has been blocked! Reason: %s", jsonObject));
+                    if (banHtml != null && !banHtml.isBlank()) {
+                        res.setContentType(MediaType._html);
+                        res.send(banHtml.replace("{reason}", jsonObject));
+                    } else {
+                        res.send(String.format("You has been blocked! Reason: %s", jsonObject));
+                    }
                 }
             }
         });
         // -=-=-=-=-
         if (adminHtml != null && !adminHtml.isBlank()) {
             server.post("/admin/update_config", (req, res) -> {
-                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)) {
+                if(isAdmin(req)) {
                     try {
                         InputStream IS = req.getBody();
                         LOG.log((IS == null) + "");
@@ -110,7 +127,7 @@ public class Uploader {
                 }
             });
             server.get("/admin/ban", (req, res) -> {
-                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)) {
+                if(isAdmin(req)) {
                     if(req.getQuery("user") == null){
                         res.setStatus(400);
                         res.json(BAD_REQUEST);
@@ -144,7 +161,7 @@ public class Uploader {
                 }
             });
             server.all("/admin/delete/:id", (req, res) -> {
-                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)) {
+                if(isAdmin(req)) {
                     String id = req.getParam("id").split("\\.")[0];
                     for (File file : mainFolder.listFiles()) {
                         if (file.isFile()) {
@@ -164,7 +181,7 @@ public class Uploader {
                 }
             });
             server.get("/1984", (req, res) -> {
-                if(req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey)){
+                if(isAdmin(req)){
                     res.setContentType(MediaType._html);
                     String configString = config.toString();
                     try {
@@ -193,6 +210,17 @@ public class Uploader {
             }
         });
         server.all("/release", (req, res) -> res.json(release.toJSON()));
+        if(authAvailable()){
+            server.all("/auth", OAuth::auth);
+            server.all("/auth/me", Users::getUserByToken);
+            server.all("/login", (req, res) -> {
+                String hostname = req.getHost();
+                String redirect = String.format("https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s",
+                        config.getString("client_id", ""),
+                        "https://" + hostname + "/auth");
+                res.redirect(redirect);
+            });
+        }
         server.all("/:id", (req, res) -> {
             String id = req.getParam("id").split("\\.")[0];
             for (File file : mainFolder.listFiles()) {
@@ -260,16 +288,27 @@ public class Uploader {
                 res.setStatus(Status._400);
                 res.json(BAD_REQUEST);
             } else {
+                if(authAvailable()) {
+                    User user = Users.getUserFromRequest(req);
+                    if (user != null && !user.role.UPLOAD_FILE) {
+                        res.setStatus(403);
+                        res.json(FORBIDDEN);
+                        return;
+                    }
+                } else if(ipUses.getOrDefault(req.getIp(), 0) >= config.getNumber("max_uses_for_ip", 5).intValue() &&
+                        System.currentTimeMillis() - ipLastUses.getOrDefault(req.getIp(), 0L) < 1440000){
+                    res.setStatus(403);
+                    res.json(Objects.getJsonError(403, "Forbidden", "Вы привышаете лимит"));
+                    return;
+                } else {
+                    if(ipUses.getOrDefault(req.getIp(), 0) >= config.getNumber("max_uses_for_ip", 5).intValue()) ipUses.put(req.getIp(), 0);
+                    ipUses.put(req.getIp(), ipUses.getOrDefault(req.getIp(), 0));
+                    ipLastUses.put(req.getIp(), System.currentTimeMillis());
+                }
                 try {
-                    if (req.getContentLength() > 104857600*2.5) {
+                    if (req.getContentLength() > getMaxSize(req)) {
                         res.setStatus(413);
-                        JsonObject error = new JsonObject();
-                        error.addProperty("code", 413);
-                        error.addProperty("codename", "Payload Too Large");
-                        error.addProperty("message", "File is over 100mb!");
-                        JsonObject resp = new JsonObject();
-                        resp.add("error", error);
-                        res.json(resp);
+                        res.json(Objects.getJsonError(413, "Payload Too Large", String.format("File is over %s!", Utils.getParsedFileSize(getMaxSize(req)))));
                         return;
                     }
                     byte[] bytes = req.getBody().readAllBytes();
@@ -355,7 +394,8 @@ public class Uploader {
                     .replace("{display}", config.getString("message", "").isEmpty() ? "display: none;" : "")
                     .replace("{message}", config.getString("message", ""))
                     .replace("{accent_color}", config.getString("accent_color", "#7f916f"))
-                    .replace("{version}", release.getString("version", "1.98.4"));
+                    .replace("{version}", release.getString("version", "1.98.4"))
+                    .replace("{auth_enable}", ""+authAvailable());
             res.setContentType(MediaType._html);
             res.send(resHtml);
         });
@@ -385,6 +425,24 @@ public class Uploader {
             config.setString("secret_token", secretKey);
             DiscordWebhooks.sendGeneratedSecretToken();
         }
+    }
+
+    public static HashMap<String, Integer> ipUses = new HashMap<>();
+    public static HashMap<String, Long> ipLastUses = new HashMap<>();
+
+    public static long getMaxSize(Request req){
+        if(authAvailable()){
+            User user = Users.getUserFromRequest(req);
+            if(user == null) return getKilo(config.getString("max_size.non_auth", "10mb"));
+            else if(user.verified) return getKilo(config.getString("max_size.verified", "250mb"));
+            else return getKilo(config.getString("max_size", "100mb"));
+        } else {
+            return getKilo(config.getString("max_size", "100mb"));
+        }
+    }
+
+    public static boolean authAvailable(){
+        return config.getBoolean("use_auth", true) && !config.getString("client_id", "").isBlank() && !roles.isEmpty() && !authHtml.isBlank();
     }
 
     public static void addFilename(String id, String name, String delete_id, String file_type_media) {
@@ -421,5 +479,5 @@ public class Uploader {
         }
     }
 
-    public static CoffeeLogger LOG = new CoffeeLogger("WaterFiles/Uploader");
+    public static CoffeeLogger LOG = new CoffeeLogger("Clovi/Uploader");
 }

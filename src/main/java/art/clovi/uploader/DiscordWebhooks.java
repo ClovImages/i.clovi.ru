@@ -1,5 +1,6 @@
 package art.clovi.uploader;
 
+import art.clovi.uploader.objects.auth.User;
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
@@ -62,6 +63,24 @@ public class DiscordWebhooks {
         client.send(embed.build());
     }
 
+    public static void sendBanUser(User moderator, User gandon, String reason, Request req){
+        if(!available) return;
+        WebhookEmbedBuilder embed = new WebhookEmbedBuilder();
+        embed.setTitle(new WebhookEmbed.EmbedTitle(String.format("%s заблокировал пользователя %s", moderator.nickname, gandon.nickname), null));
+        embed.addField(new WebhookEmbed.EmbedField(true, "Причина", reason));
+        embed.setColor(0xFFfc1a47);
+        embed.addField(new WebhookEmbed.EmbedField(true, "IP-Адрес", "||"+req.getIp()+"||"));
+        client.send(embed.build());
+    }
+    public static void sendPardonUser(User moderator, User negandon, Request req){
+        if(!available) return;
+        WebhookEmbedBuilder embed = new WebhookEmbedBuilder();
+        embed.setTitle(new WebhookEmbed.EmbedTitle(String.format("%s разблокировал пользователя %s", moderator.nickname, negandon.nickname), null));
+        embed.setColor(0xFF7f916f);
+        embed.addField(new WebhookEmbed.EmbedField(true, "IP-Адрес", "||"+req.getIp()+"||"));
+        client.send(embed.build());
+    }
+
     // -=-=-=-
 
     public static void sendUploadFile(String name, String url, String type, String id, String delete_id, Request req){
@@ -95,6 +114,18 @@ public class DiscordWebhooks {
         embed.setDescription(String.format("Название: %s\nContent-Type: %s\nID: %s", name, type, id));
         embed.addField(new WebhookEmbed.EmbedField(true, "URL", url));
         embed.addField(new WebhookEmbed.EmbedField(true, "IP-Адрес", "||"+req.getIp()+"||"));
+        client.send(embed.build());
+    }
+    public static void sendReport(Exception exception){
+        if(!available) return;
+        WebhookEmbedBuilder embed = new WebhookEmbedBuilder();
+        embed.setTitle(new WebhookEmbed.EmbedTitle("Произошла ошибка!!!!", null));
+        embed.setColor(0xFFfc1a47);
+        StringBuilder builder = new StringBuilder().append("```").append("\n").append(exception.getMessage());
+        for(StackTraceElement arg : exception.getStackTrace())
+            builder.append("\n- [").append(arg.getLineNumber()).append("] ").append(arg.getFileName()).append(" - ").append(arg.getMethodName());
+        builder.append("\n```");
+        embed.setDescription(builder.toString());
         client.send(embed.build());
     }
 }
