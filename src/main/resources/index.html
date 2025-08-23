@@ -21,8 +21,154 @@
     <meta name="twitter:site" content="@kel_cu">
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Icons" />
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        /*\
+|*|
+|*|	:: cookies.js ::
+|*|
+|*|	A complete cookies reader/writer framework with full unicode support.
+|*|
+|*|	Revision #8 - February 18th, 2020
+|*|
+|*|	https://developer.mozilla.org/en-US/docs/Web/API/document.cookie
+|*|	https://developer.mozilla.org/User:fusionchess
+|*|	https://github.com/madmurphy/cookies.js
+|*|
+|*|	This framework is released under the GNU Public License, version 3 or later.
+|*|	http://www.gnu.org/licenses/gpl-3.0-standalone.html
+|*|
+|*|	Syntaxes:
+|*|
+|*|	* docCookies.setItem(name, value[, end[, path[, domain[, secure[, same-site]]]]])
+|*|	* docCookies.getItem(name)
+|*|	* docCookies.removeItem(name[, path[, domain[, secure[, same-site]]]])
+|*|	* docCookies.hasItem(name)
+|*|	* docCookies.keys()
+|*|	* docCookies.clear([path[, domain[, secure[, same-site]]]])
+|*|
+\*/
+
+(function () {
+
+	function makeSetterString (sKey, sValue, vEnd, sPath, sDomain, bSecure, vSameSite) {
+
+		var sExpires = "";
+
+		if (vEnd) {
+
+			switch (vEnd.constructor) {
+
+				case Number:
+
+					sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+
+					/*
+					Note: Despite officially defined in RFC 6265, the use of `max-age` is not compatible with any
+					version of Internet Explorer, Edge and some mobile browsers. Therefore passing a number to
+					the end parameter might not work as expected. A possible solution might be to convert the the
+					relative time to an absolute time. For instance you could replace the previous line with:
+					*/
+					/*
+					sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; expires=" + (new Date(vEnd * 1e3 + Date.now())).toUTCString();
+					*/
+
+					break;
+
+				case String:
+
+					sExpires = "; expires=" + vEnd;
+					break;
+
+				case Date:
+
+					sExpires = "; expires=" + vEnd.toUTCString();
+					break;
+
+			}
+
+		}
+
+		return	encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "") + (!vSameSite || vSameSite.toString().toLowerCase() === "no_restriction" ? "" : vSameSite.toString().toLowerCase() === "lax" || Math.ceil(vSameSite) === 1 || vSameSite === true ? "; samesite=lax" : vSameSite.toString().toLowerCase() === "none" || vSameSite < 0 ? "; samesite=none" : "; samesite=strict");
+
+	}
+
+	var reURIAllowed = /[\-\.\+\*]/g, reCNameAllowed = /^(?:expires|max\-age|path|domain|secure|samesite|httponly)$/i;
+
+	window.docCookies = {
+
+		"getItem": function (sKey) {
+
+			if (!sKey) { return null; }
+
+			return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(reURIAllowed, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+
+		},
+
+		"setItem": function (sKey, sValue, vEnd, sPath, sDomain, bSecure, vSameSite) {
+
+			if (!sKey || reCNameAllowed.test(sKey)) { return false; }
+
+			document.cookie = makeSetterString(sKey, sValue, vEnd, sPath, sDomain, bSecure, vSameSite);
+			return true;
+
+		},
+
+		"removeItem": function (sKey, sPath, sDomain, bSecure, vSameSite) {
+
+			if (!this.hasItem(sKey)) { return false; }
+
+			document.cookie = makeSetterString(sKey, "", "Thu, 01 Jan 1970 00:00:00 GMT", sPath, sDomain, bSecure, vSameSite);
+			return true;
+
+		},
+
+		"hasItem": function (sKey) {
+
+			if (!sKey || reCNameAllowed.test(sKey)) { return false; }
+
+			return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(reURIAllowed, "\\$&") + "\\s*\\=")).test(document.cookie);
+
+		},
+
+		"keys": function () {
+
+			var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+
+			for (var nLen = aKeys.length, nIdx = 0; nIdx < nLen; nIdx++) {
+
+				aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]);
+
+			}
+
+			return aKeys;
+		},
+
+		"clear": function (sPath, sDomain, bSecure, vSameSite) {
+
+			for (var aKeys = this.keys(), nLen = aKeys.length, nIdx = 0; nIdx < nLen; nIdx++) {
+
+				this.removeItem(aKeys[nIdx], sPath, sDomain, bSecure, vSameSite);
+
+			}
+
+		}
+
+	};
+
+})();
+
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+
+	module.exports = docCookies;
+
+}
+
+
+    </script>
+    <script>
+        let authEnable = {auth_enable}
         var width = window.innerWidth
         window.onresize = (event) => {
             if (width != window.innerWidth) {
@@ -38,6 +184,12 @@
                 document.getElementsByTagName("body")[0].style = "padding-left: 10pt; padding-right: 10pt;"
                 document.getElementsByTagName("html")[0].style = ""
             }
+            if(authEnable) document.getElementById("with_auth").style.display = "";
+            if (window.innerWidth < 765) {
+                document.getElementById("auth").innerHTML = `<a ${user.id === undefined ? "href=\"/login\"" : ""}> <i class="material-icons" aria-hidden="true">${getAccountButtonIcon()}</i></a>`
+            } else {
+                document.getElementById("auth").innerHTML = `<a ${user.id === undefined ? "href=\"/login\"" : ""}> <i class="material-icons" aria-hidden="true">${getAccountButtonIcon()}</i> ${user.id === undefined ? "Войти" : (user.nickname ?? user.username)}</a>`
+            }
         }
 
         let fileInput;
@@ -45,7 +197,8 @@
             e.preventDefault();
             e.stopPropagation();
         }
-        document.addEventListener("DOMContentLoaded", function (event) {
+        document.addEventListener("DOMContentLoaded", async function (event) {
+            await accountState();
             adaptionModile();
             loadHistory()
             fileInput = document.getElementById("file");
@@ -78,10 +231,10 @@
         })
         let showHistory = false;
         const uploadFile = (file) => {
-            if (file.size > 104857600) {
-                alert("Файл весит больше 100мб!")
-                return;
-            }
+            // if (file.size > 104857600) {
+            //     alert("Файл весит больше 100мб!")
+            //     return;
+            // }
             document.getElementById("title").innerText = "Пожалуйста подождите...";
             document.getElementById("description").innerHTML = "Это может занять некоторое время!"
             document.getElementById("msg")
@@ -120,6 +273,18 @@
                     }
                 })
                 .catch(error => {
+                    if (typeof error.json === "function") {
+                        error.json().then(jsonError => {
+                            console.log("Json error from API");
+                            console.log(jsonError);
+                        }).catch(genericError => {
+                            console.log("Generic error from API");
+                            console.log(error.statusText);
+                        });
+                    } else {
+                        console.log("Fetch error");
+                        console.log(error);
+                    }
                     document.getElementById("title").innerText = "Произошла ошибка!";
                     document.getElementById("msg").innerHTML = "<p>Возможно Роскомнадзор добрался до сюда</p>"
                     document.getElementById("description").innerHTML = "Попробуйте ещё раз!"
@@ -160,6 +325,41 @@
             localStorage.setItem("history", JSON.stringify(history))
             loadHistory();
         }
+        let user = {}
+
+        async function accountState() {
+            let cookie = docCookies.getItem("clovi_uploader_access_token");
+            if (cookie === undefined || cookie === null) {
+                adaptionModile()
+            } else {
+                try {
+                    let url = await axios({
+                        url: `/auth/me`,
+                        headers: {
+                            Authorization: `Bearer ${cookie}`
+                        }
+                    })
+                    let data = url.data;
+                    if (data.error) {
+                        console.log(data.error)
+                    } else {
+                        user = data;
+                        adaptionModile();
+                    }
+                } catch (e) {
+                    console.log(e)
+                    adaptionModile()
+                }
+            }
+        }
+        function getAccountButtonName() {
+            if (user.id == null) return "Войти в аккаунт"
+            else return user.nickname.length === 0 ? user.username : user.nickname
+        }
+        function getAccountButtonIcon() {
+            if (user.id == null) return "login"
+            else return "face"
+        }
 
         function addHistoryElement(data, id) {
             let div = document.getElementById("files");
@@ -192,7 +392,7 @@
                     let heh = data.delete_url;
                     let url = await fetch(heh);
                     let status = await url.status;
-                    if (status == 200) {
+                    if (status == 200 || status == 404) {
                         let history = JSON.parse(localStorage.getItem("history"));
                         let newHistory = [];
                         for (i = 0; i < history.length; i++) {
@@ -289,6 +489,17 @@
             --input-color: var(--font-color);
         }
 
+        .footer .container .inner .list .item .link i {
+    vertical-align: bottom;
+}
+
+.header .container .inner .list .item .link i {
+    vertical-align: bottom;
+}
+* i {
+    vertical-align: bottom;
+}
+
         html {
             box-sizing: border-box;
             background: var(--background);
@@ -370,13 +581,6 @@
             color: var(--font-color);
             text-decoration: none;
         }
-
-        /* .header .container .inner .list .item .link a img{
-    height: 15pt;
-} */
-        /* .header .container .inner .list .item .link{
-    padding-bottom: 0;
-} */
 
         .header .container .inner .list .item .link:hover {
             color: var(--base-color);
@@ -722,11 +926,18 @@
                 <div id="warn" style="height: auto !important;{display}" class="displayed-max">
                     <p style="text-align: center;">{message}</p>
                 </div>
+                <nav class="menu" id="with_auth" style="display: none;">
+                    <ul class="list">
+                        <li class="item" id="auth">
+                            <a class="link"><i class="material-icons" aria-hidden="true"></i></a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </header>
     <div id="content">
-        <div style="padding-bottom: 6pt;">
+        <div style="padding-bottom: 6pt;" id="">
             <input id="oh" style="display: none;">
             <img src="https://wf.kelcu.ru/icons/document.png" width="120pt" align="left">
             <h2 id="title">Перетащите сюда файл</h2>
@@ -744,8 +955,6 @@
     <footer class="footer">
         <div class="container">
             <div class="inner">
-                <!-- <p><a href="https://kelcu.ru/">Сделано с ❤ от Кела</a><br>v{version}</p>
-                <p><a href="https://clovi.ru/about">О проекте</a> <br> <a href="/catterino.png">Chatterino</a></p> -->
                 <div>
                     <img src="https://wf.kelcu.ru/icons/clover.png" width="50pt" align="left" id="header-icon">
                     <p id="header-text">Сделано с ❤ от Кела</p>

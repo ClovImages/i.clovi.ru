@@ -76,7 +76,7 @@ jar {
     }
     manifest {
         attributes(
-                'Main-Class': 'ru.kelcuprum.waterfiles.Uploader'
+                'Main-Class': 'art.clovi.uploader.Uploader'
         )
     }
 }

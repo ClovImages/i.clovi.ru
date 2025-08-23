@@ -48,13 +48,13 @@ public class Uploader {
     public static HashMap<String, String> fileDeletes = new HashMap<>();
     public static HashMap<String, String> fileTypes = new HashMap<>();
     public static String secretKey = config.getString("secret_token", "");
-    
-    public static boolean isAdmin(Request req){
+
+    public static boolean isAdmin(Request req) {
         User user = Users.getUserFromRequest(req);
-        if(user != null && user.role.ADMINISTRATION_TOOL) return true;
+        if (user != null && user.role.ADMINISTRATION_TOOL) return true;
         return req.getCookie("uploader_peepohuy") != null && req.getCookie("uploader_peepohuy").getValue().equals(secretKey);
     }
-    
+
     public static void main(String[] args) throws IOException {
         InputStream releaseFile = Uploader.class.getResourceAsStream("/index.html");
         if (releaseFile != null) html = new String(releaseFile.readAllBytes(), StandardCharsets.UTF_8);
@@ -90,7 +90,7 @@ public class Uploader {
         server.use(Middleware.cors());
         server.use((req, res) -> LOG.log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
         server.use((req, res) -> {
-            if(req.getPath().equals("/") || req.getPath().startsWith("/upload")) {
+            if (req.getPath().equals("/") || req.getPath().startsWith("/upload")) {
                 String jsonObject = bans.getString(req.getIp(), null);
                 if (jsonObject != null) {
                     LOG.log(String.format("[BANNED] %s сделал запрос на %s", req.getIp(), req.getPath()));
@@ -108,7 +108,7 @@ public class Uploader {
         // -=-=-=-=-
         if (adminHtml != null && !adminHtml.isBlank()) {
             server.post("/admin/update_config", (req, res) -> {
-                if(isAdmin(req)) {
+                if (isAdmin(req)) {
                     try {
                         InputStream IS = req.getBody();
                         LOG.log((IS == null) + "");
@@ -127,8 +127,8 @@ public class Uploader {
                 }
             });
             server.get("/admin/ban", (req, res) -> {
-                if(isAdmin(req)) {
-                    if(req.getQuery("user") == null){
+                if (isAdmin(req)) {
+                    if (req.getQuery("user") == null) {
                         res.setStatus(400);
                         res.json(BAD_REQUEST);
                         return;
@@ -138,10 +138,10 @@ public class Uploader {
                         String reason = req.getQuery("reason");
                         String ban = bans.getString(user, null);
                         String status;
-                        if(ban == null) {
+                        if (ban == null) {
                             bans.setString(user, reason == null ? "" : reason);
                             status = "Blocked";
-                        } else if(reason != null) {
+                        } else if (reason != null) {
                             bans.setString(user, reason);
                             status = "Updated reason";
                         } else {
@@ -161,7 +161,7 @@ public class Uploader {
                 }
             });
             server.all("/admin/delete/:id", (req, res) -> {
-                if(isAdmin(req)) {
+                if (isAdmin(req)) {
                     String id = req.getParam("id").split("\\.")[0];
                     for (File file : mainFolder.listFiles()) {
                         if (file.isFile()) {
@@ -181,7 +181,7 @@ public class Uploader {
                 }
             });
             server.get("/1984", (req, res) -> {
-                if(isAdmin(req)){
+                if (isAdmin(req)) {
                     res.setContentType(MediaType._html);
                     String configString = config.toString();
                     try {
@@ -195,22 +195,22 @@ public class Uploader {
         }
         server.all((req, res) -> {
             String[] mainHostnames = config.getString("hostname", "").replace(" ", "").split(",");
-            if(mainHostnames.length != 0){
+            if (mainHostnames.length != 0) {
                 boolean isFollowed = false;
-                for(String domain : mainHostnames){
-                    if(req.getHost().equals(domain)){
+                for (String domain : mainHostnames) {
+                    if (req.getHost().equals(domain)) {
                         isFollowed = true;
                         break;
                     }
                 }
-                if(!isFollowed){
+                if (!isFollowed) {
                     String protocol = req.getProtocol().startsWith("HTTP/") ? "http" : "https";
-                    res.redirect(String.format("%s://%s%s",protocol, mainHostnames[0], req.getPath()));
+                    res.redirect(String.format("%s://%s%s", protocol, mainHostnames[0], req.getPath()));
                 }
             }
         });
         server.all("/release", (req, res) -> res.json(release.toJSON()));
-        if(authAvailable()){
+        if (authAvailable()) {
             server.all("/auth", OAuth::auth);
             server.all("/auth/me", Users::getUserByToken);
             server.all("/login", (req, res) -> {
@@ -223,64 +223,55 @@ public class Uploader {
         }
         server.all("/:id", (req, res) -> {
             String id = req.getParam("id").split("\\.")[0];
-            for (File file : mainFolder.listFiles()) {
-                if (file.isFile()) {
-                    String name = file.getName().split("\\.")[0];
-                    if (name.equals(id)) {
-                        if (fileNames.containsKey(name))
-                            res.setHeader("Content-Disposition", "filename=\"" + fileNames.get(name) + "\"");
-                        if (fileTypes.containsKey(name)) {
-                            res.setHeader("Content-Type", fileTypes.get(name));
-                            if(fileTypes.get(name).startsWith("video") || fileTypes.get(name).startsWith("audio")){
-                                res.setHeader("accept-ranges", "bytes");
-                                if(!req.getHeader("range").isEmpty()) res.setHeader("content-range", "bytes "+req.getHeader("range").getFirst()+file.length()+"/"+(file.length()+1));
-                            } else if(fileTypes.get(name).startsWith("text")) {
-                                try {
-                                    res.sendBytes(Files.readString(file.toPath(), UTF_8).getBytes(), MediaType._txt.getMIME());
-                                    System.gc();
-                                } catch (Exception EX){
-                                    EX.printStackTrace();
-                                }
-                                return;
-                            }
+            File file = Utils.getFileByID(id);
+            if (file != null) {
+                if (fileNames.containsKey(id))
+                    res.setHeader("Content-Disposition", "filename=\"" + fileNames.get(id) + "\"");
+                if (fileTypes.containsKey(id)) {
+                    res.setHeader("Content-Type", fileTypes.get(id));
+                    if (fileTypes.get(id).startsWith("video") || fileTypes.get(id).startsWith("audio")) {
+                        res.setHeader("accept-ranges", "bytes");
+                        if (!req.getHeader("range").isEmpty())
+                            res.setHeader("content-range", "bytes " + req.getHeader("range").getFirst() + file.length() + "/" + (file.length() + 1));
+                    } else if (fileTypes.get(id).startsWith("text")) {
+                        try {
+                            res.sendBytes(Files.readString(file.toPath(), UTF_8).getBytes(), MediaType._txt.getMIME());
+                            System.gc();
+                        } catch (Exception EX) {
+                            EX.printStackTrace();
                         }
-                        res.send(file.toPath());
-                        System.gc();
-                        break;
+                        return;
                     }
                 }
+                res.send(file.toPath());
+                System.gc();
             }
         });
         server.all("/e/:id", (req, res) -> {
             String id = req.getParam("id").split("\\.")[0];
-            for (File file : mainFolder.listFiles()) {
-                if (file.isFile()) {
-                    String name = file.getName().split("\\.")[0];
-                    if (name.equals(id)) {
-                        String cloviName = config.getString("name", "{host}")
-                                .replace("{host}", req.getHost().contains("localhost") || req.getHost().contains("127.0.0.1") ? "Clovi > Uploader" : req.getHost());
-                        String page = embedHtml;
-                        File filePage = new File("./embed.html");
-                        if (filePage.exists()) {
-                            try {
-                                page = Files.readString(filePage.toPath());
-                            } catch (Exception ignored) {
-                                ignored.printStackTrace();
-                            }
-                        }
-                        String type = fileTypes.getOrDefault(name, "file");
-                        String resHtml = page.replace("{hostname}", cloviName)
-                                .replace("{filename}", fileNames.getOrDefault(name, name))
-                                .replace("{id}", name)
-                                .replace("{type}", type.startsWith("video") ? "video" : type.startsWith("image") ? "image" : type.startsWith("audio") ? "audio" : "file")
-                                .replace("{filetype}", type)
-                                .replace("{accent_color}", config.getString("accent_color", "#7f916f"))
-                                .replace("{version}", release.getString("version", "1.98.4"));
-                        res.setContentType(MediaType._html);
-                        res.send(resHtml);
-                        break;
+            File file = Utils.getFileByID(id);
+            if (file != null) {
+                String cloviName = config.getString("name", "{host}")
+                        .replace("{host}", req.getHost().contains("localhost") || req.getHost().contains("127.0.0.1") ? "Clovi > Uploader" : req.getHost());
+                String page = embedHtml;
+                File filePage = new File("./embed.html");
+                if (filePage.exists()) {
+                    try {
+                        page = Files.readString(filePage.toPath());
+                    } catch (Exception ignored) {
+                        ignored.printStackTrace();
                     }
                 }
+                String type = fileTypes.getOrDefault(id, "file");
+                String resHtml = page.replace("{hostname}", cloviName)
+                        .replace("{filename}", fileNames.getOrDefault(id, id))
+                        .replace("{id}", id)
+                        .replace("{type}", type.startsWith("video") ? "video" : type.startsWith("image") ? "image" : type.startsWith("audio") ? "audio" : "file")
+                        .replace("{filetype}", type)
+                        .replace("{accent_color}", config.getString("accent_color", "#7f916f"))
+                        .replace("{version}", release.getString("version", "1.98.4"));
+                res.setContentType(MediaType._html);
+                res.send(resHtml);
             }
         });
         server.post("/upload", (req, res) -> {
@@ -288,20 +279,21 @@ public class Uploader {
                 res.setStatus(Status._400);
                 res.json(BAD_REQUEST);
             } else {
-                if(authAvailable()) {
+                if (authAvailable()) {
                     User user = Users.getUserFromRequest(req);
                     if (user != null && !user.role.UPLOAD_FILE) {
                         res.setStatus(403);
                         res.json(FORBIDDEN);
                         return;
                     }
-                } else if(ipUses.getOrDefault(req.getIp(), 0) >= config.getNumber("max_uses_for_ip", 5).intValue() &&
-                        System.currentTimeMillis() - ipLastUses.getOrDefault(req.getIp(), 0L) < 1440000){
+                } else if (ipUses.getOrDefault(req.getIp(), 0) >= config.getNumber("max_uses_for_ip", 5).intValue() &&
+                        System.currentTimeMillis() - ipLastUses.getOrDefault(req.getIp(), 0L) < 1440000) {
                     res.setStatus(403);
                     res.json(Objects.getJsonError(403, "Forbidden", "Вы привышаете лимит"));
                     return;
                 } else {
-                    if(ipUses.getOrDefault(req.getIp(), 0) >= config.getNumber("max_uses_for_ip", 5).intValue()) ipUses.put(req.getIp(), 0);
+                    if (ipUses.getOrDefault(req.getIp(), 0) >= config.getNumber("max_uses_for_ip", 5).intValue())
+                        ipUses.put(req.getIp(), 0);
                     ipUses.put(req.getIp(), ipUses.getOrDefault(req.getIp(), 0));
                     ipLastUses.put(req.getIp(), System.currentTimeMillis());
                 }
@@ -338,7 +330,7 @@ public class Uploader {
                     resp.addProperty("url", String.format("%1$s/%2$s", config.getString("url", "https://i.clovi.ru"), id));
                     resp.addProperty("delete_url", String.format("%1$s/delete/%2$s", config.getString("url", "https://i.clovi.ru"), delete_id));
                     res.json(resp);
-                    DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/%2$s", "http://"+req.getHost(), id), fileTypeMedia, id, delete_id, req);
+                    DiscordWebhooks.sendUploadFile(fileName, String.format("%1$s/%2$s", "http://" + req.getHost(), id), fileTypeMedia, id, delete_id, req);
                 } catch (Exception e) {
                     e.printStackTrace();
                     res.setStatus(500);
@@ -395,20 +387,20 @@ public class Uploader {
                     .replace("{message}", config.getString("message", ""))
                     .replace("{accent_color}", config.getString("accent_color", "#7f916f"))
                     .replace("{version}", release.getString("version", "1.98.4"))
-                    .replace("{auth_enable}", ""+authAvailable());
+                    .replace("{auth_enable}", "" + authAvailable());
             res.setContentType(MediaType._html);
             res.send(resHtml);
         });
         boolean staticEnable = true;
-        if(!Path.of("./static").toFile().exists()){
+        if (!Path.of("./static").toFile().exists()) {
             try {
                 Files.createDirectory(Path.of("./static"));
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 ex.printStackTrace();
                 staticEnable = false;
             }
         }
-        if(staticEnable) server.all(new FileStatics("static"));
+        if (staticEnable) server.all(new FileStatics("static"));
         server.all((req, res) -> {
             res.setStatus(404);
             res.send("File not found");
@@ -420,7 +412,7 @@ public class Uploader {
         LOG.log("-=-=-=-=-=-=-=-=-=-=-=-=-");
         DiscordWebhooks.run();
         DiscordWebhooks.sendRunning();
-        if(secretKey.isEmpty()){
+        if (secretKey.isEmpty()) {
             secretKey = String.format("%s-%s-%s-%s", makeID(20), makeID(20), makeID(20), makeID(20));
             config.setString("secret_token", secretKey);
             DiscordWebhooks.sendGeneratedSecretToken();
@@ -430,18 +422,18 @@ public class Uploader {
     public static HashMap<String, Integer> ipUses = new HashMap<>();
     public static HashMap<String, Long> ipLastUses = new HashMap<>();
 
-    public static long getMaxSize(Request req){
-        if(authAvailable()){
+    public static long getMaxSize(Request req) {
+        if (authAvailable()) {
             User user = Users.getUserFromRequest(req);
-            if(user == null) return getKilo(config.getString("max_size.non_auth", "10mb"));
-            else if(user.verified) return getKilo(config.getString("max_size.verified", "250mb"));
+            if (user == null) return getKilo(config.getString("max_size.non_auth", "10mb"));
+            else if (user.verified) return getKilo(config.getString("max_size.verified", "250mb"));
             else return getKilo(config.getString("max_size", "100mb"));
         } else {
             return getKilo(config.getString("max_size", "100mb"));
         }
     }
 
-    public static boolean authAvailable(){
+    public static boolean authAvailable() {
         return config.getBoolean("use_auth", true) && !config.getString("client_id", "").isBlank() && !roles.isEmpty() && !authHtml.isBlank();
     }
 
@@ -474,6 +466,7 @@ public class Uploader {
     public static void checkFolders() throws IOException {
         try {
             if (!mainFolder.exists()) Files.createDirectory(mainFolder.toPath());
+            if (!OAuth.dir.exists()) Files.createDirectory(OAuth.dir.toPath());
         } catch (Exception ignored) {
             throw ignored;
         }

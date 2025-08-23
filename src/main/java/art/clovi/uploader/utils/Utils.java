@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.HashMap;
 
 import static art.clovi.uploader.Uploader.fileDeletes;
 import static art.clovi.uploader.Uploader.mainFolder;
@@ -13,6 +14,29 @@ public class Utils {
     public static String isToString(InputStream is) throws IOException {
         byte[] requestBodyBytes = is.readAllBytes();
         return new String(requestBodyBytes);
+    }
+
+    public static HashMap<String, File> files = new HashMap<>();
+    public static File getFileByID(String id){
+        File needFile = null;
+        if(files.containsKey(id)) needFile = files.get(id);
+        else {
+            for (File file : mainFolder.listFiles()) {
+                if (file.isFile()) {
+                    String name = file.getName().split("\\.")[0];
+                    if (name.equals(id)) {
+                        needFile = file;
+                        files.put(id, file);
+                        break;
+                    }
+                }
+            }
+        }
+        if(needFile != null && !needFile.exists()) {
+            files.remove(id);
+            needFile = null;
+        }
+        return needFile;
     }
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();

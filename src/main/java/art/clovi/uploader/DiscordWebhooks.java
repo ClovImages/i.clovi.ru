@@ -1,5 +1,6 @@
 package art.clovi.uploader;
 
+import art.clovi.uploader.auth.Users;
 import art.clovi.uploader.objects.auth.User;
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.send.WebhookEmbed;
@@ -88,6 +89,10 @@ public class DiscordWebhooks {
         embed.setColor(0xFFe9c46a)
                 .setFooter(new WebhookEmbed.EmbedFooter("Пользователь загрузил файл!", "https://wf.kelcu.ru/icons/clover.png"));
         embed.addField(new WebhookEmbed.EmbedField(true, "IP-Адрес", "||"+req.getIp()+"||"));
+        User user = Users.getUserFromRequest(req);
+        if(user != null){
+            embed.setAuthor(new WebhookEmbed.EmbedAuthor(getName(user)+" ("+user.id+")", "", ""));
+        }
         if(type.startsWith("video")){
             embed.setDescription(String.format("Название: %s\nТип: Видео\nContent-Type: %s\nID: %s\nDelete URL: %s", name, type, id, String.format("http://%s/delete/%s", req.getHost(), delete_id)));
             client.send(embed.build());
@@ -109,6 +114,10 @@ public class DiscordWebhooks {
     }
     public static void sendDeleteFile(String name, String url, String type, String id, Request req){
         WebhookEmbedBuilder embed = new WebhookEmbedBuilder();
+        User user = Users.getUserFromRequest(req);
+        if(user != null){
+            embed.setAuthor(new WebhookEmbed.EmbedAuthor(getName(user)+" ("+user.id+")", "", ""));
+        }
         embed.setColor(0xFFfc1a47)
                 .setFooter(new WebhookEmbed.EmbedFooter("Пользователь удалил файл!", "https://wf.kelcu.ru/icons/clover.png"));
         embed.setDescription(String.format("Название: %s\nContent-Type: %s\nID: %s", name, type, id));
@@ -127,5 +136,9 @@ public class DiscordWebhooks {
         builder.append("\n```");
         embed.setDescription(builder.toString());
         client.send(embed.build());
+    }
+
+    public static String getName(User user){
+        return user.nickname.isBlank() ? user.username : user.nickname;
     }
 }
